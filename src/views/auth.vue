@@ -34,6 +34,28 @@
             {{ ucitavanje && !jeRegistracija ? 'PRIJAVA...' : 'PRIJAVA' }}
           </button>
         </form>
+
+        <div v-if="prikaziFaceIdPrijava" class="razdjelnik">
+          <span class="linija"></span>
+          <span class="ili">ili</span>
+          <span class="linija"></span>
+        </div>
+
+        <button
+          v-if="prikaziFaceIdPrijava"
+          class="gumb-faceid"
+          @click="handleFaceIdPrijava"
+          :disabled="ucitavanje"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+            <line x1="9" y1="9" x2="9.01" y2="9"/>
+            <line x1="15" y1="9" x2="15.01" y2="9"/>
+          </svg>
+          Prijava s Face ID
+        </button>
+
         <p class="tekst-link">
           Stvori račun
           <button class="link-gumb" @click="prebaci(true)">Registracija</button>
@@ -75,13 +97,33 @@
       </div>
     </div>
 
+    <div v-if="prikaziModalFaceId" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-ikona">🔒</div>
+        <h3 class="modal-naslov">Postavi Face ID</h3>
+        <p class="modal-tekst">Želiš li omogućiti brzu prijavu s Face ID za sljedeći put?</p>
+        <div class="modal-gumbi">
+          <button class="modal-gumb-da" @click="handlePostavljanjeFaceId">Da, postavi</button>
+          <button class="modal-gumb-ne" @click="preskociFaceId">Preskoči</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
+import {
+  podrzavaWebAuthn,
+  postaviFaceId,
+  prijaviSeFaceIdom,
+  imaPostavljenFaceId,
+  zapamtiFaceId,
+  obrisiZapamceniFaceId,
+} from '../services/webauthn.js';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -91,9 +133,14 @@ const prikaziLozinku1 = ref(false);
 const prikaziLozinku2 = ref(false);
 const greska = ref('');
 const ucitavanje = ref(false);
+const prikaziModalFaceId = ref(false);
 
 const prijavaForma = ref({ email: '', lozinka: '' });
 const regForma = ref({ ime: '', email: '', lozinka: '' });
+
+const prikaziFaceIdPrijava = computed(() => {
+  return podrzavaWebAuthn() && prijavaForma.value.email && imaPostavljenFaceId(prijavaForma.value.email);
+});
 
 function prebaci(naRegistraciju) {
   greska.value = '';
@@ -118,9 +165,45 @@ async function handleRegistracija() {
   ucitavanje.value = true;
   try {
     await auth.registracija(regForma.value.ime, regForma.value.email, regForma.value.lozinka);
-    router.push('/odabir-prijave');
+    if (podrzavaWebAuthn()) {
+      prikaziModalFaceId.value = true;
+    } else {
+      router.push('/odabir-prijave');
+    }
   } catch (error) {
     greska.value = error.response?.data?.poruka || 'Greška pri registraciji.';
+  } finally {
+    ucitavanje.value = false;
+  }
+}
+
+async function handlePostavljanjeFaceId() {
+  try {
+    await postaviFaceId();
+    zapamtiFaceId(regForma.value.email);
+    prikaziModalFaceId.value = false;
+    router.push('/odabir-prijave');
+  } catch (error) {
+    prikaziModalFaceId.value = false;
+    router.push('/odabir-prijave');
+  }
+}
+
+function preskociFaceId() {
+  prikaziModalFaceId.value = false;
+  router.push('/odabir-prijave');
+}
+
+async function handleFaceIdPrijava() {
+  greska.value = '';
+  ucitavanje.value = true;
+  try {
+    const data = await prijaviSeFaceIdom(prijavaForma.value.email);
+    auth.spremiSesiju(data);
+    router.push(data.korisnik.uloga === 'admin' ? '/admin' : '/dashboard');
+  } catch (error) {
+    greska.value = 'Face ID prijava neuspješna. Pokušaj s lozinkom.';
+    obrisiZapamceniFaceId(prijavaForma.value.email);
   } finally {
     ucitavanje.value = false;
   }
@@ -163,15 +246,13 @@ async function handleRegistracija() {
 }
 
 .logo-slika {
-  width: 400px;
-  height: 400px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
   filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
 }
 
-.mobitel-zaglavlje {
-  display: none;
-}
+.mobitel-zaglavlje { display: none; }
 
 .panel-forme {
   position: absolute;
@@ -188,11 +269,7 @@ async function handleRegistracija() {
 
 .panel-forme.lijevi { left: 0; }
 .panel-forme.desni  { right: 0; }
-
-.panel-forme.sakrij {
-  opacity: 0;
-  pointer-events: none;
-}
+.panel-forme.sakrij { opacity: 0; pointer-events: none; }
 
 .sadrzaj-forme {
   width: 100%;
@@ -202,15 +279,13 @@ async function handleRegistracija() {
   align-items: center;
 }
 
-.naslov-app,
-.naslov-forma {
+.naslov-app, .naslov-forma {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800;
   color: #ffffff;
   text-align: center;
   margin-bottom: 2.5rem;
 }
-
 .naslov-app  { font-size: 1.9rem; letter-spacing: 0.05em; }
 .naslov-forma { font-size: 2.2rem; letter-spacing: 0.08em; }
 
@@ -219,7 +294,7 @@ async function handleRegistracija() {
   flex-direction: column;
   gap: 1rem;
   width: 100%;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .polje-forme { position: relative; }
@@ -281,6 +356,37 @@ async function handleRegistracija() {
 .gumb-submit:active:not(:disabled) { transform: scale(0.98); }
 .gumb-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
+.razdjelnik {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0.75rem 0;
+}
+.linija { flex: 1; height: 1px; background: rgba(255,255,255,0.12); }
+.ili { color: rgba(255,255,255,0.3); font-size: 0.8rem; }
+
+.gumb-faceid {
+  width: 100%;
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 0.85rem;
+  color: rgba(255,255,255,0.8);
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: border-color 0.2s, color 0.2s;
+  margin-bottom: 0.5rem;
+  -webkit-tap-highlight-color: transparent;
+}
+.gumb-faceid:hover { border-color: #f5c800; color: #f5c800; }
+
 .poruka-greska {
   background: rgba(239,68,68,0.12);
   border: 1px solid rgba(239,68,68,0.3);
@@ -294,7 +400,7 @@ async function handleRegistracija() {
 .tekst-link {
   color: rgba(255,255,255,0.5);
   font-size: 0.9rem;
-  margin: 0;
+  margin: 0.75rem 0 0;
   text-align: center;
 }
 
@@ -312,6 +418,75 @@ async function handleRegistracija() {
 }
 .link-gumb:hover { text-decoration: underline; }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.modal {
+  background: #2a2a2a;
+  border: 1px solid rgba(245,200,0,0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  animation: ulaziModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ulaziModal {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.modal-ikona { font-size: 2.5rem; margin-bottom: 1rem; }
+.modal-naslov {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+}
+.modal-tekst {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+.modal-gumbi { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.modal-gumb-da {
+  background: #f5c800;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.modal-gumb-da:hover { background: #ffd700; }
+
+.modal-gumb-ne {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-family: 'Barlow', sans-serif;
+}
+.modal-gumb-ne:hover { color: rgba(255,255,255,0.7); }
+
 @media (max-width: 700px) {
   .stranica-auth {
     flex-direction: column;
@@ -319,11 +494,7 @@ async function handleRegistracija() {
     justify-content: flex-start;
     padding: 0;
   }
-
-  .zuti-panel {
-    display: none;
-  }
-
+  .zuti-panel { display: none; }
   .mobitel-zaglavlje {
     display: flex;
     flex-direction: column;
@@ -331,11 +502,9 @@ async function handleRegistracija() {
     justify-content: center;
     background: #f5c800;
     width: 100%;
-    padding: 2rem 1rem 2.5rem;
+    padding: 2rem 1rem 3.5rem;
     clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
-    padding-bottom: 3.5rem;
   }
-
   .logo-mobitel {
     width: 100px;
     height: 100px;
@@ -343,7 +512,6 @@ async function handleRegistracija() {
     filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
     margin-bottom: 0.5rem;
   }
-
   .naslov-mobitel {
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 1.4rem;
@@ -351,7 +519,6 @@ async function handleRegistracija() {
     color: #1a1a1a;
     letter-spacing: 0.08em;
   }
-
   .panel-forme {
     position: relative;
     width: 100%;
@@ -360,36 +527,11 @@ async function handleRegistracija() {
     top: auto;
     bottom: auto;
     padding: 2rem 1.5rem;
-    display: flex;
     align-items: flex-start;
-    justify-content: center;
   }
-
-  .panel-forme.sakrij {
-    display: none;
-  }
-
-  .sadrzaj-forme {
-    max-width: 100%;
-  }
-
-  .naslov-app {
-    display: none;
-  }
-
-  .naslov-forma {
-    font-size: 1.8rem;
-    margin-bottom: 1.75rem;
-  }
-
-  .unos-polja {
-    font-size: 1rem;
-    padding: 1rem 1.1rem;
-  }
-
-  .gumb-submit {
-    padding: 1rem;
-    font-size: 1rem;
-  }
+  .panel-forme.sakrij { display: none; }
+  .sadrzaj-forme { max-width: 100%; }
+  .naslov-app { display: none; }
+  .naslov-forma { font-size: 1.8rem; margin-bottom: 1.75rem; }
 }
 </style>

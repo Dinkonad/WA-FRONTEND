@@ -40,5 +40,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('korisnik');
   }
 
-  return { token, korisnik, jePrijavljen, jeAdmin, prijava, registracija, dohvatiProfil, odjava };
+  return { token, korisnik, jePrijavljen, jeAdmin, prijava, registracija, dohvatiProfil, spremiSesiju, odjava };
 });
