@@ -123,6 +123,8 @@ import {
   imaPostavljenFaceId,
   zapamtiFaceId,
   obrisiZapamceniFaceId,
+  zapamtiZadnjiEmail,
+  dohvatiZadnjiEmail,
 } from '../services/webauthn.js';
 
 const router = useRouter();
