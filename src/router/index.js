@@ -9,6 +9,12 @@ const routes = [
     meta: { gostu: true },
   },
   {
+    path: '/odabir-prijave',
+    name: 'OdabirPrijave',
+    component: () => import('../views/OdabirPrijave.vue'),
+    meta: { zastiteno: true },
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/dashboard.vue'),
@@ -33,10 +39,10 @@ export function postaviGuard(authStore) {
       return next('/prijava');
     }
     if (to.meta.gostu && authStore.jePrijavljen) {
-      return next(authStore.jeAdmin ? '/admin' : '/dashboard');
+      return next(authStore.jeAdmin ? '/admin' : '/odabir-prijave');
     }
     if (to.meta.samoAdmin && !authStore.jeAdmin) {
-      return next('/dashboard');
+      return next('/odabir-prijave');
     }
     next();
   });

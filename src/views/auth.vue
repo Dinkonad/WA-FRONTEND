@@ -1,7 +1,13 @@
 <template>
   <div class="stranica-auth">
+
     <div class="zuti-panel" :class="{ 'na-lijevo': jeRegistracija }">
-    <img src="../assets/logo.png" class="logo-slika" alt="Teretana Inspector" />
+      <img src="../assets/logo.png" class="logo-slika" alt="Teretana Inspector" />
+    </div>
+
+    <div class="mobitel-zaglavlje">
+      <img src="../assets/logo.png" class="logo-mobitel" alt="Teretana Inspector" />
+      <div class="naslov-mobitel">TERETANA INSPECTOR</div>
     </div>
 
     <div class="panel-forme lijevi" :class="{ 'sakrij': jeRegistracija }">
@@ -9,10 +15,10 @@
         <div class="naslov-app">TERETANA INSPECTOR</div>
         <form class="forma" @submit.prevent="handlePrijava">
           <div class="polje-forme">
-            <input v-model="prijavaForma.email" type="email" class="unos-polja" placeholder="EMAIL" required />
+            <input v-model="prijavaForma.email" type="email" class="unos-polja" placeholder="EMAIL" required autocomplete="email" />
           </div>
           <div class="polje-forme polje-lozinka">
-            <input v-model="prijavaForma.lozinka" :type="prikaziLozinku1 ? 'text' : 'password'" class="unos-polja" placeholder="LOZINKA" required />
+            <input v-model="prijavaForma.lozinka" :type="prikaziLozinku1 ? 'text' : 'password'" class="unos-polja" placeholder="LOZINKA" required autocomplete="current-password" />
             <button type="button" class="gumb-oko" @click="prikaziLozinku1 = !prikaziLozinku1">
               <svg v-if="!prikaziLozinku1" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -34,18 +40,19 @@
         </p>
       </div>
     </div>
+
     <div class="panel-forme desni" :class="{ 'sakrij': !jeRegistracija }">
       <div class="sadrzaj-forme">
         <div class="naslov-forma">REGISTRACIJA</div>
         <form class="forma" @submit.prevent="handleRegistracija">
           <div class="polje-forme">
-            <input v-model="regForma.ime" type="text" class="unos-polja" placeholder="IME I PREZIME" required />
+            <input v-model="regForma.ime" type="text" class="unos-polja" placeholder="IME I PREZIME" required autocomplete="name" />
           </div>
           <div class="polje-forme">
-            <input v-model="regForma.email" type="email" class="unos-polja" placeholder="EMAIL" required />
+            <input v-model="regForma.email" type="email" class="unos-polja" placeholder="EMAIL" required autocomplete="email" />
           </div>
           <div class="polje-forme polje-lozinka">
-            <input v-model="regForma.lozinka" :type="prikaziLozinku2 ? 'text' : 'password'" class="unos-polja" placeholder="LOZINKA" required />
+            <input v-model="regForma.lozinka" :type="prikaziLozinku2 ? 'text' : 'password'" class="unos-polja" placeholder="LOZINKA" required autocomplete="new-password" />
             <button type="button" class="gumb-oko" @click="prikaziLozinku2 = !prikaziLozinku2">
               <svg v-if="!prikaziLozinku2" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -111,7 +118,7 @@ async function handleRegistracija() {
   ucitavanje.value = true;
   try {
     await auth.registracija(regForma.value.ime, regForma.value.email, regForma.value.lozinka);
-    router.push('/dashboard');
+    router.push('/odabir-prijave');
   } catch (error) {
     greska.value = error.response?.data?.poruka || 'Greška pri registraciji.';
   } finally {
@@ -125,6 +132,7 @@ async function handleRegistracija() {
 
 .stranica-auth {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   background: #1e1e1e;
   font-family: 'Barlow', sans-serif;
@@ -155,18 +163,14 @@ async function handleRegistracija() {
 }
 
 .logo-slika {
-  width: 500%;
-  height: 500px;
+  width: 400px;
+  height: 400px;
   object-fit: contain;
   filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
 }
 
-.placeholder-tekst {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: rgba(245,200,0,0.5);
-  letter-spacing: 0.2em;
+.mobitel-zaglavlje {
+  display: none;
 }
 
 .panel-forme {
@@ -224,16 +228,17 @@ async function handleRegistracija() {
   width: 100%;
   background: transparent;
   border: 1.5px solid rgba(255,255,255,0.22);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0.88rem 1.1rem;
   color: #fff;
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   outline: none;
   transition: border-color 0.2s, background 0.2s;
   box-sizing: border-box;
+  -webkit-appearance: none;
 }
 .unos-polja::placeholder { color: rgba(255,255,255,0.32); letter-spacing: 0.15em; }
 .unos-polja:focus { border-color: #f5c800; background: rgba(245,200,0,0.04); }
@@ -248,10 +253,11 @@ async function handleRegistracija() {
   border: none;
   color: rgba(255,255,255,0.38);
   cursor: pointer;
-  padding: 0;
+  padding: 0.25rem;
   display: flex;
   align-items: center;
   transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
 .gumb-oko:hover { color: #f5c800; }
 
@@ -259,8 +265,8 @@ async function handleRegistracija() {
   background: #f5c800;
   color: #1a1a1a;
   border: none;
-  border-radius: 6px;
-  padding: 0.95rem;
+  border-radius: 8px;
+  padding: 1rem;
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 1.05rem;
   font-weight: 800;
@@ -268,8 +274,11 @@ async function handleRegistracija() {
   cursor: pointer;
   margin-top: 0.25rem;
   transition: background 0.2s, transform 0.1s;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 .gumb-submit:hover:not(:disabled) { background: #ffd700; transform: translateY(-1px); }
+.gumb-submit:active:not(:disabled) { transform: scale(0.98); }
 .gumb-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .poruka-greska {
@@ -279,11 +288,12 @@ async function handleRegistracija() {
   padding: 0.65rem 0.9rem;
   border-radius: 6px;
   font-size: 0.85rem;
+  width: 100%;
 }
 
 .tekst-link {
   color: rgba(255,255,255,0.5);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   margin: 0;
   text-align: center;
 }
@@ -293,18 +303,93 @@ async function handleRegistracija() {
   border: none;
   color: #f5c800;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  padding: 0;
+  padding: 0.25rem;
   margin-left: 0.25rem;
   font-family: 'Barlow', sans-serif;
-  transition: opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
 .link-gumb:hover { text-decoration: underline; }
 
 @media (max-width: 700px) {
-  .zuti-panel { display: none; }
-  .panel-forme { width: 100%; left: 0; right: 0; }
-  .panel-forme.sakrij { display: none; }
+  .stranica-auth {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .zuti-panel {
+    display: none;
+  }
+
+  .mobitel-zaglavlje {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f5c800;
+    width: 100%;
+    padding: 2rem 1rem 2.5rem;
+    clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+    padding-bottom: 3.5rem;
+  }
+
+  .logo-mobitel {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+    margin-bottom: 0.5rem;
+  }
+
+  .naslov-mobitel {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: 0.08em;
+  }
+
+  .panel-forme {
+    position: relative;
+    width: 100%;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    padding: 2rem 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .panel-forme.sakrij {
+    display: none;
+  }
+
+  .sadrzaj-forme {
+    max-width: 100%;
+  }
+
+  .naslov-app {
+    display: none;
+  }
+
+  .naslov-forma {
+    font-size: 1.8rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .unos-polja {
+    font-size: 1rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .gumb-submit {
+    padding: 1rem;
+    font-size: 1rem;
+  }
 }
 </style>
