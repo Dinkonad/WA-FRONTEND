@@ -15,7 +15,7 @@
         <div class="naslov-app">TERETANA INSPECTOR</div>
         <form class="forma" @submit.prevent="handlePrijava">
           <div class="polje-forme">
-            <input v-model="prijavaForma.email" type="email" class="unos-polja" placeholder="EMAIL" required autocomplete="email" @blur="provjeriEmailFaceId" />
+            <input v-model="prijavaForma.email" type="email" class="unos-polja" placeholder="EMAIL" required autocomplete="email" />
           </div>
           <div class="polje-forme polje-lozinka">
             <input v-model="prijavaForma.lozinka" :type="prikaziLozinku1 ? 'text' : 'password'" class="unos-polja" placeholder="LOZINKA" required autocomplete="current-password" />
@@ -123,8 +123,6 @@ import {
   imaPostavljenFaceId,
   zapamtiFaceId,
   obrisiZapamceniFaceId,
-  zapamtiZadnjiEmail,
-  dohvatiZadnjiEmail,
 } from '../services/webauthn.js';
 
 const router = useRouter();
@@ -137,28 +135,16 @@ const greska = ref('');
 const ucitavanje = ref(false);
 const prikaziModalFaceId = ref(false);
 
-const prijavaForma = ref({ email: dohvatiZadnjiEmail(), lozinka: '' });
+const prijavaForma = ref({ email: '', lozinka: '' });
 const regForma = ref({ ime: '', email: '', lozinka: '' });
 
-const zadnjiEmail = dohvatiZadnjiEmail();
-const prikaziFaceIdGumb = computed(() => {
-  const email = prijavaForma.value.email || zadnjiEmail;
-  return podrzavaWebAuthn() && email && imaPostavljenFaceId(email);
-});
-
-const emailZaFaceId = computed(() => {
-  return prijavaForma.value.email || zadnjiEmail;
+const prikaziFaceIdPrijava = computed(() => {
+  return podrzavaWebAuthn() && prijavaForma.value.email && imaPostavljenFaceId(prijavaForma.value.email);
 });
 
 function prebaci(naRegistraciju) {
   greska.value = '';
   jeRegistracija.value = naRegistraciju;
-}
-
-async function provjeriEmailFaceId() {
-  if (podrzavaWebAuthn() && imaPostavljenFaceId(prijavaForma.value.email)) {
-    await handleFaceIdPrijava();
-  }
 }
 
 async function handlePrijava() {
