@@ -12,6 +12,18 @@ export const useAuthStore = defineStore('auth', () => {
   async function prijava(email, lozinka) {
     const { data } = await api.post('/auth/sesija', { email, lozinka });
     spremiSesiju(data);
+    // Dohvati profil sa strava podacima
+    try {
+      const profil = await api.get('/korisnici/profil');
+      korisnik.value = {
+        ...korisnik.value,
+        ...profil.data.korisnik,
+        stravaProfilna: profil.data.korisnik?.strava?.profilnaSlika,
+      };
+      localStorage.setItem('korisnik', JSON.stringify(korisnik.value));
+    } catch (e) {
+      console.error(e);
+    }
     return data.korisnik;
   }
 
@@ -23,6 +35,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function dohvatiProfil() {
     const { data } = await api.get('/korisnici/profil');
+    korisnik.value = {
+      ...korisnik.value,
+      ...data.korisnik,
+      stravaProfilna: data.korisnik?.strava?.profilnaSlika,
+    };
+    localStorage.setItem('korisnik', JSON.stringify(korisnik.value));
     return data.korisnik;
   }
 
