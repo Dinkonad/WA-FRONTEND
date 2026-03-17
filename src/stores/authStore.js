@@ -33,6 +33,21 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('korisnik', JSON.stringify(data.korisnik));
   }
 
+  async function postaviTokenIzURL(jwt) {
+    token.value = jwt;
+    localStorage.setItem('token', jwt);
+    try {
+      const { data } = await api.get('/korisnici/profil');
+      korisnik.value = {
+        ...data.korisnik,
+        stravaProfilna: data.korisnik?.strava?.profilnaSlika,
+      };
+      localStorage.setItem('korisnik', JSON.stringify(korisnik.value));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   function odjava() {
     token.value = null;
     korisnik.value = null;
@@ -40,5 +55,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('korisnik');
   }
 
-  return { token, korisnik, jePrijavljen, jeAdmin, prijava, registracija, dohvatiProfil, spremiSesiju, odjava };
+  return { token, korisnik, jePrijavljen, jeAdmin, prijava, registracija, dohvatiProfil, spremiSesiju, postaviTokenIzURL, odjava };
 });
