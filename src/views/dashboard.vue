@@ -32,7 +32,12 @@ onMounted(async () => {
     await auth.postaviTokenIzURL(token);
     router.replace('/dashboard');
   }
+
   ucitavanje.value = true;
+  try {
+    await api.post('/strava/sync');
+  } catch (e) {}
+
   try {
     const { data } = await api.get('/strava/aktivnosti?velicina=5');
     aktivnosti.value = data.aktivnosti || [];

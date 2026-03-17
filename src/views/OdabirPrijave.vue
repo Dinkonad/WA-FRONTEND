@@ -46,7 +46,8 @@ onMounted(() => {
 });
 
 function prijavaSStravom() {
-  window.location.href = `${import.meta.env.VITE_API_URL}/strava/connect`;
+  const token = localStorage.getItem('token') || '';
+  window.location.href = `${import.meta.env.VITE_API_URL}/strava/connect?token=${token}`;
 }
 
 function nastaviBeзStrave() {
