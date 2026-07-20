@@ -89,6 +89,10 @@
             </button>
           </div>
 
+          <div v-if="a.imenaLajkera?.length" class="feed-lajkeri" :title="a.imenaLajkera.join(', ')">
+            Sviđa se: {{ formatirajLajkere(a.imenaLajkera) }}
+          </div>
+
           <div v-if="a.prikaziKomentare" class="feed-komentari">
             <div v-for="k in a.komentari" :key="k._id" class="feed-komentar">
               <b>{{ k.ime }}</b> {{ k.tekst }}
@@ -162,6 +166,11 @@ async function ucitajJos() {
   await ucitajFeed(true);
 }
 
+function formatirajLajkere(imena) {
+  if (imena.length <= 2) return imena.join(' i ');
+  return `${imena[0]}, ${imena[1]} i još ${imena.length - 2}`;
+}
+
 async function lajkaj(a) {
   const bio = a.lajkano;
   a.lajkano = !bio;
@@ -170,6 +179,7 @@ async function lajkaj(a) {
     const { data } = await api.post(`/feed/${a._id}/lajk`);
     a.lajkano = data.lajkano;
     a.brojLajkova = data.brojLajkova;
+    a.imenaLajkera = data.imenaLajkera;
   } catch (err) {
     a.lajkano = bio;
     a.brojLajkova += bio ? 1 : -1;
@@ -560,6 +570,13 @@ onMounted(() => {
 .feed-akcija-aktivna {
   border-color: #f5c800;
   color: #f5c800;
+}
+
+.feed-lajkeri {
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.45);
+  cursor: default;
 }
 
 .feed-komentari {
