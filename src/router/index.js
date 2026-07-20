@@ -26,6 +26,12 @@ const routes = [
     meta: { zastiteno: true },
   },
   {
+    path: '/izazovi',
+    name: 'Izazovi',
+    component: () => import('../views/Izazovi.vue'),
+    meta: { zastiteno: true },
+  },
+  {
     path: '/admin',
     name: 'Admin',
     component: () => import('../views/adminpanel.vue'),

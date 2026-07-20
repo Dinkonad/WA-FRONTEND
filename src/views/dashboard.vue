@@ -14,6 +14,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
           <span>FITNES FEED</span>
         </button>
+        <button class="nav-item" @click="router.push('/izazovi')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
+          <span>IZAZOVI</span>
+        </button>
       </nav>
       <div class="sidebar-korisnik">
         <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="korisnik-avatar" />
