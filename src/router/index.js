@@ -6,7 +6,6 @@ const routes = [
     path: '/prijava',
     name: 'Auth',
     component: () => import('../views/auth.vue'),
-    meta: { gostu: true },
   },
   {
     path: '/odabir-prijave',
@@ -18,6 +17,12 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/dashboard.vue'),
+    meta: { zastiteno: true },
+  },
+  {
+    path: '/feed',
+    name: 'FitnessFeed',
+    component: () => import('../views/FitnessFeed.vue'),
     meta: { zastiteno: true },
   },
   {
@@ -37,9 +42,6 @@ export function postaviGuard(authStore) {
   router.beforeEach((to, from, next) => {
     if (to.meta.zastiteno && !authStore.jePrijavljen) {
       return next('/prijava');
-    }
-    if (to.meta.gostu && authStore.jePrijavljen) {
-      return next(authStore.jeAdmin ? '/admin' : '/odabir-prijave');
     }
     if (to.meta.samoAdmin && !authStore.jeAdmin) {
       return next('/odabir-prijave');

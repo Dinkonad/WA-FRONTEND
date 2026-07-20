@@ -10,6 +10,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span>STATISTIKE</span>
         </button>
+        <button class="nav-item" @click="router.push('/feed')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+          <span>FITNES FEED</span>
+        </button>
       </nav>
       <div class="sidebar-korisnik">
         <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="korisnik-avatar" />
@@ -251,6 +255,10 @@
             </div>
             <span class="akt-km">{{ (akt.udaljenost / 1000).toFixed(1) }} Km</span>
             <span class="akt-datum">{{ formatirajDatum(akt.datum) }}</span>
+            <label class="feed-toggle" @click.stop title="Prikaži u Fitnes Feedu">
+              <input type="checkbox" :checked="akt.uFeedu" @change="promijeniFeedStatus(akt)" />
+              <span class="feed-toggle-klizac"></span>
+            </label>
           </div>
 
           <button v-if="periodFiltrirane.length > prikazano" class="gumb-vise" @click="prikazano += 10">
@@ -271,6 +279,26 @@
             <span class="modal-tip-datum">{{ odabranaAktivnost.tip }} · {{ formatirajDatumPuni(odabranaAktivnost.datum) }}</span>
           </div>
         </div>
+
+        <div class="modal-feed-sekcija">
+          <label class="feed-toggle" @click.stop>
+            <input type="checkbox" :checked="odabranaAktivnost.uFeedu" @change="promijeniFeedStatus(odabranaAktivnost)" />
+            <span class="feed-toggle-klizac"></span>
+          </label>
+          <span class="modal-feed-label">Prikaži u Fitnes Feedu</span>
+        </div>
+        <div v-if="odabranaAktivnost.uFeedu" class="modal-opis-sekcija">
+          <textarea
+            v-model="opisNacrt"
+            class="modal-opis-textarea"
+            placeholder="Napiši opis uz aktivnost (vidljivo u feedu)..."
+            maxlength="500"
+          ></textarea>
+          <button class="gumb-spremi-opis" @click="spremiOpis(odabranaAktivnost)" :disabled="spremanjeOpisa">
+            {{ spremanjeOpisa ? 'Spremam...' : 'Spremi opis' }}
+          </button>
+        </div>
+
         <div class="modal-stats">
           <div class="modal-stat">
             <span class="modal-stat-broj">{{ (odabranaAktivnost.udaljenost / 1000).toFixed(2) }}</span>
@@ -361,6 +389,7 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
+import { tipIkona, formatirajDatum, formatirajDatumPuni, formatirajVrijeme, dekodirajPolyline, ucitajSkriptu } from '../utils/aktivnosti.js';
 
 const router = useRouter();
 const route = useRoute();
@@ -375,6 +404,8 @@ const prikazano = ref(10);
 const aktivniPeriod = ref('ukupno');
 const odabranaAktivnost = ref(null);
 const preuzimanjeSlike = ref(false);
+const opisNacrt = ref('');
+const spremanjeOpisa = ref(false);
 const tjedanOffset = ref(0);
 const mjesecOffset = ref(0);
 const godinaOffset = ref(0);
@@ -654,6 +685,7 @@ onMounted(async () => {
 
 async function otvoriAktivnost(akt) {
   odabranaAktivnost.value = akt;
+  opisNacrt.value = akt.opis || '';
   if (!akt.polyline) return;
   await nextTick();
   await new Promise(r => setTimeout(r, 200));
@@ -822,30 +854,6 @@ async function preuzmiKaoSliku(akt) {
   }
 }
 
-function dekodirajPolyline(encoded) {
-  const points = [];
-  let index = 0, lat = 0, lng = 0;
-  while (index < encoded.length) {
-    let b, shift = 0, result = 0;
-    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
-    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
-    shift = 0; result = 0;
-    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
-    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
-    points.push([lat / 1e5, lng / 1e5]);
-  }
-  return points;
-}
-
-function ucitajSkriptu(src) {
-  return new Promise((resolve) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = src; s.onload = resolve;
-    document.head.appendChild(s);
-  });
-}
-
 async function dohvatiAktivnosti() {
   ucitavanje.value = true;
   try {
@@ -856,6 +864,29 @@ async function dohvatiAktivnosti() {
     console.error(err);
   } finally {
     ucitavanje.value = false;
+  }
+}
+
+async function promijeniFeedStatus(akt) {
+  const novaVrijednost = !akt.uFeedu;
+  akt.uFeedu = novaVrijednost;
+  try {
+    await api.patch(`/strava/aktivnost/${akt._id}/feed`, { uFeedu: novaVrijednost });
+  } catch (err) {
+    akt.uFeedu = !novaVrijednost;
+    console.error(err);
+  }
+}
+
+async function spremiOpis(akt) {
+  spremanjeOpisa.value = true;
+  try {
+    await api.patch(`/strava/aktivnost/${akt._id}/feed`, { opis: opisNacrt.value });
+    akt.opis = opisNacrt.value;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    spremanjeOpisa.value = false;
   }
 }
 
@@ -881,26 +912,6 @@ function handleOdjava() {
   router.push('/prijava');
 }
 
-function tipIkona(tip) {
-  const ikone = { Run: '🏃', Ride: '🚴', Walk: '🚶', Hike: '🥾', Swim: '🏊', Workout: '💪' };
-  return ikone[tip] || '⚡';
-}
-
-function formatirajDatum(datum) {
-  return new Date(datum).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatirajDatumPuni(datum) {
-  return new Date(datum).toLocaleDateString('hr-HR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-}
-
-function formatirajVrijeme(sekunde) {
-  const h = Math.floor(sekunde / 3600);
-  const m = Math.floor((sekunde % 3600) / 60);
-  const s = sekunde % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 </script>
 
 <style scoped>
@@ -1686,6 +1697,49 @@ function formatirajVrijeme(sekunde) {
   text-align: right;
 }
 
+.feed-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.feed-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.feed-toggle-klizac {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.12);
+  border-radius: 22px;
+  transition: background 0.2s;
+}
+
+.feed-toggle-klizac::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.feed-toggle input:checked + .feed-toggle-klizac {
+  background: #f5c800;
+}
+
+.feed-toggle input:checked + .feed-toggle-klizac::before {
+  transform: translateX(18px);
+}
+
 .gumb-vise {
   display: block;
   width: calc(100% - 3rem);
@@ -1805,6 +1859,58 @@ function formatirajVrijeme(sekunde) {
 .modal-tip-datum {
   color: rgba(255,255,255,0.4);
   font-size: 0.88rem;
+}
+
+.modal-feed-sekcija {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.modal-feed-label {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.6);
+}
+
+.modal-opis-sekcija {
+  margin-bottom: 1.5rem;
+}
+
+.modal-opis-textarea {
+  width: 100%;
+  min-height: 70px;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #fff;
+  padding: 0.75rem;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 0.6rem;
+}
+
+.modal-opis-textarea:focus {
+  outline: none;
+  border-color: #f5c800;
+}
+
+.gumb-spremi-opis {
+  background: #f5c800;
+  border: none;
+  color: #1a1a1a;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.gumb-spremi-opis:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .modal-stats {
