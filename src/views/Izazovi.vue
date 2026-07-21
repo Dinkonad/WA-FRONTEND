@@ -18,6 +18,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
           <span>IZAZOVI</span>
         </button>
+        <button class="nav-item" @click="router.push('/clanarina')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
+          <span>ČLANARINA</span>
+        </button>
       </nav>
       <div class="sidebar-korisnik">
         <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="korisnik-avatar" />
@@ -70,7 +74,7 @@
         </template>
 
         <!-- DETALJI -->
-        <template v-else-if="odabraniIzazov">
+        <template v-else-if="korak === 'detalji' && odabraniIzazov">
           <button class="gumb-nazad" @click="korak = 'lista'">‹ Nazad</button>
 
           <div class="detalji-kartica">
@@ -114,11 +118,33 @@
             </div>
 
             <div v-else class="detalji-sekcija ljestvica">
-              <div v-if="odabraniIzazov.ucitavaLjestvicu" class="ljestvica-ucitavanje">Računam bodove...</div>
+              <div v-if="odabraniIzazov.ucitavaLjestvicu" class="ljestvica-ucitavanje">Učitavam ljestvicu...</div>
               <template v-else>
+                <div class="ljestvica-alat-traka">
+                  <span class="ljestvica-azurirano">
+                    {{ odabraniIzazov.azurirana ? `Ažurirano: ${formatirajVrijemeAzuriranja(odabraniIzazov.azurirana)}` : 'Bodovi još nisu izračunati' }}
+                  </span>
+                  <button class="gumb-osvjezi" :disabled="odabraniIzazov.osvjezavaLjestvicu" @click="osvjeziLjestvicu">
+                    {{ odabraniIzazov.osvjezavaLjestvicu ? 'Osvježavam...' : '↻ Osvježi' }}
+                  </button>
+                </div>
+
+                <input
+                  v-if="odabraniIzazov.ljestvica && odabraniIzazov.ljestvica.length > 0"
+                  v-model="pretragaLjestvice"
+                  class="pretraga-input"
+                  placeholder="Pretraži po imenu..."
+                />
                 <div v-if="!odabraniIzazov.ljestvica || odabraniIzazov.ljestvica.length === 0" class="prazno-malo">Još nema sudionika.</div>
-                <div v-for="(r, idx) in odabraniIzazov.ljestvica" :key="r.korisnikId" class="ljestvica-red" :class="{ 'ljestvica-eliminiran': r.status === 'eliminiran' }">
-                  <span class="ljestvica-mjesto">#{{ idx + 1 }}</span>
+                <div v-else-if="filtriranaLjestvica.length === 0" class="prazno-malo">Nema rezultata za "{{ pretragaLjestvice }}".</div>
+                <div
+                  v-for="r in filtriranaLjestvica"
+                  :key="r.korisnikId"
+                  class="ljestvica-red"
+                  :class="{ 'ljestvica-eliminiran': r.status === 'eliminiran' }"
+                  @click="otvoriSudionika(r)"
+                >
+                  <span class="ljestvica-mjesto">#{{ r.mjesto }}</span>
                   <img v-if="r.slika" :src="r.slika" class="ljestvica-avatar" />
                   <div v-else class="ljestvica-avatar-inicijali">{{ inicijaliIme(r.ime) }}</div>
                   <div class="ljestvica-info">
@@ -128,6 +154,55 @@
                   <span class="ljestvica-bodovi">{{ r.bodovi }} bod.</span>
                 </div>
               </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- DETALJI SUDIONIKA -->
+        <template v-else-if="korak === 'sudionik'">
+          <button class="gumb-nazad" @click="korak = 'detalji'">‹ Nazad na ljestvicu</button>
+
+          <div v-if="ucitavaSudionika" class="ucitavanje"><div class="spinner"></div></div>
+
+          <div v-else-if="odabraniSudionik" class="detalji-kartica">
+            <div class="sudionik-header">
+              <img v-if="odabraniSudionik.slika" :src="odabraniSudionik.slika" class="ljestvica-avatar sudionik-avatar-veci" />
+              <div v-else class="ljestvica-avatar-inicijali sudionik-avatar-veci">{{ inicijaliIme(odabraniSudionik.ime) }}</div>
+              <div>
+                <h3 class="izazov-naziv">{{ odabraniSudionik.ime }}</h3>
+                <span class="izazov-meta">
+                  {{ odabraniSudionik.bodovi }} bodova ·
+                  {{ odabraniSudionik.status === 'eliminiran' ? `Ispao ${formatirajDatum(odabraniSudionik.eliminiranDatum)}` : 'Aktivan' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Kumulativno: po uvjetu -->
+            <div v-if="odabraniSudionik.uvjeti" class="sudionik-sekcija">
+              <div v-for="(u, idx) in odabraniSudionik.uvjeti" :key="idx" class="uvjet-detalj-blok">
+                <div class="uvjet-detalj-naslov">
+                  {{ tipIkona(u.tip) }} {{ tipNaziv(u.tip) }} — {{ zaokruzi(u.napredak) }} / {{ u.cilj }} {{ jedinicaTeksta(u.mjera) }} → <b>{{ u.bodoviOstvareno }} bodova</b>
+                </div>
+                <div v-if="u.aktivnosti.length === 0" class="prazno-malo">Nema aktivnosti koje se broje.</div>
+                <div v-for="a in u.aktivnosti" :key="a.stravaId" class="sudionik-aktivnost-red">
+                  <span>{{ tipIkona(a.tip) }} {{ a.naziv }}</span>
+                  <span class="sudionik-aktivnost-vrijednost">{{ formatirajDatum(a.datum) }} · {{ vrijednostAktivnosti(a, u.mjera) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dnevno: po danu -->
+            <div v-else-if="odabraniSudionik.dani" class="sudionik-sekcija">
+              <div v-for="(d, idx) in odabraniSudionik.dani" :key="idx" class="dan-blok" :class="{ 'dan-nije-prosao': !d.prosao }">
+                <div class="dan-naslov">
+                  {{ d.prosao ? '✓' : '✕' }} {{ formatirajDatum(d.datum) }} — {{ d.prosao ? `${d.bodovi} bodova` : 'nije ispunjen nijedan uvjet' }}
+                </div>
+                <div v-if="d.aktivnosti.length === 0" class="prazno-malo">Nema aktivnosti taj dan.</div>
+                <div v-for="a in d.aktivnosti" :key="a.stravaId" class="sudionik-aktivnost-red">
+                  <span>{{ tipIkona(a.tip) }} {{ a.naziv }}</span>
+                  <span class="sudionik-aktivnost-vrijednost">{{ (a.udaljenost / 1000).toFixed(2) }} km · {{ Math.round(a.trajanje / 60) }} min</span>
+                </div>
+              </div>
             </div>
           </div>
         </template>
@@ -154,6 +229,15 @@ function tipNaziv(tip) { return NAZIVI_TIPOVA[tip] || tip; }
 function tipIkona(tip) { return IKONE_TIPOVA[tip] || '⚡'; }
 function jedinicaTeksta(mjera) { return JEDINICE[mjera] || ''; }
 function inicijaliIme(ime) { return (ime || '').split(' ').map(r => r[0]).join('').toUpperCase().slice(0, 2); }
+function zaokruzi(broj) { return Math.round((broj || 0) * 10) / 10; }
+
+function vrijednostAktivnosti(a, mjera) {
+  if (mjera === 'km') return `${(a.udaljenost / 1000).toFixed(2)} km`;
+  if (mjera === 'vrijeme') return `${Math.round(a.trajanje / 60)} min`;
+  if (mjera === 'kalorije') return `${a.kalorije ?? 0} kcal`;
+  if (mjera === 'elevacija') return `${a.visinskaRazlika ?? 0} m`;
+  return '1 aktivnost';
+}
 
 const mobilniMeni = ref(false);
 const ucitavanje = ref(false);
@@ -162,14 +246,24 @@ const pridruzivanje = ref(null);
 const odabraniIzazov = ref(null);
 const modalTab = ref('pravila');
 const korak = ref('lista');
+const pretragaLjestvice = ref('');
+const odabraniSudionik = ref(null);
+const ucitavaSudionika = ref(false);
 
 const inicijali = computed(() => inicijaliIme(auth.korisnik?.ime));
+
+const filtriranaLjestvica = computed(() => {
+  const lista = (odabraniIzazov.value?.ljestvica || []).map((r, idx) => ({ ...r, mjesto: idx + 1 }));
+  const q = pretragaLjestvice.value.trim().toLowerCase();
+  if (!q) return lista;
+  return lista.filter(r => r.ime.toLowerCase().includes(q));
+});
 
 async function ucitajIzazove() {
   ucitavanje.value = true;
   try {
     const { data } = await api.get('/izazovi');
-    izazovi.value = (data.aktivni || []).map(i => ({ ...i, ucitavaLjestvicu: false, ljestvica: null }));
+    izazovi.value = (data.aktivni || []).map(i => ({ ...i, ucitavaLjestvicu: false, osvjezavaLjestvicu: false, ljestvica: null, azurirana: null }));
   } catch (err) {
     console.error(err);
   } finally {
@@ -193,7 +287,22 @@ async function pridruziSe(izazov) {
 function otvoriDetalje(izazov) {
   odabraniIzazov.value = izazov;
   modalTab.value = 'pravila';
+  pretragaLjestvice.value = '';
   korak.value = 'detalji';
+}
+
+async function otvoriSudionika(sudionik) {
+  odabraniSudionik.value = null;
+  ucitavaSudionika.value = true;
+  korak.value = 'sudionik';
+  try {
+    const { data } = await api.get(`/izazovi/${odabraniIzazov.value._id}/sudionik/${sudionik.korisnikId}`);
+    odabraniSudionik.value = data;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavaSudionika.value = false;
+  }
 }
 
 async function odaberiTabLjestvica() {
@@ -205,11 +314,33 @@ async function odaberiTabLjestvica() {
   try {
     const { data } = await api.get(`/izazovi/${izazov._id}/ljestvica`);
     izazov.ljestvica = data.ljestvica || [];
+    izazov.azurirana = data.azurirana;
   } catch (err) {
     console.error(err);
   } finally {
     izazov.ucitavaLjestvicu = false;
   }
+}
+
+async function osvjeziLjestvicu() {
+  const izazov = odabraniIzazov.value;
+  if (!izazov) return;
+
+  izazov.osvjezavaLjestvicu = true;
+  try {
+    await api.post(`/izazovi/${izazov._id}/ljestvica/osvjezi`);
+    const { data } = await api.get(`/izazovi/${izazov._id}/ljestvica`);
+    izazov.ljestvica = data.ljestvica || [];
+    izazov.azurirana = data.azurirana;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    izazov.osvjezavaLjestvicu = false;
+  }
+}
+
+function formatirajVrijemeAzuriranja(datum) {
+  return new Date(datum).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 function handleOdjava() {
@@ -445,6 +576,45 @@ onMounted(() => {
   padding: 0.5rem;
 }
 
+.ljestvica-alat-traka {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.ljestvica-azurirano { font-size: 0.78rem; color: rgba(255,255,255,0.35); }
+
+.gumb-osvjezi {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.gumb-osvjezi:hover:not(:disabled) { border-color: #f5c800; color: #f5c800; }
+.gumb-osvjezi:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.pretraga-input {
+  width: 100%;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  padding: 0.6rem 0.85rem;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.88rem;
+  margin-bottom: 0.75rem;
+}
+.pretraga-input:focus { outline: none; border-color: #f5c800; }
+
 .ljestvica-red {
   display: flex;
   align-items: center;
@@ -452,8 +622,11 @@ onMounted(() => {
   padding: 0.5rem 0.6rem;
   background: #1e1e1e;
   border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
+.ljestvica-red:hover { background: #262626; }
 .ljestvica-eliminiran { opacity: 0.5; }
 
 .ljestvica-mjesto {
@@ -476,6 +649,45 @@ onMounted(() => {
 .ljestvica-ime { font-size: 0.88rem; }
 .ljestvica-status { font-size: 0.72rem; color: #f87171; }
 .ljestvica-bodovi { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; color: #f5c800; font-size: 0.95rem; }
+
+.sudionik-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sudionik-avatar-veci { width: 52px; height: 52px; font-size: 1.1rem; }
+
+.sudionik-sekcija { display: flex; flex-direction: column; gap: 1rem; }
+
+.uvjet-detalj-blok, .dan-blok {
+  background: #1e1e1e;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+
+.dan-blok.dan-nije-prosao { border: 1px solid rgba(239,68,68,0.3); }
+
+.uvjet-detalj-naslov, .dan-naslov {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 0.6rem;
+}
+
+.sudionik-aktivnost-red {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.65);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.sudionik-aktivnost-red:first-of-type { border-top: none; }
+
+.sudionik-aktivnost-vrijednost { color: #f5c800; flex-shrink: 0; white-space: nowrap; }
 
 .gumb-nazad {
   background: none;

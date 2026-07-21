@@ -32,10 +32,22 @@ const routes = [
     meta: { zastiteno: true },
   },
   {
+    path: '/clanarina',
+    name: 'Clanarina',
+    component: () => import('../views/Clanarina.vue'),
+    meta: { zastiteno: true },
+  },
+  {
     path: '/admin',
     name: 'Admin',
     component: () => import('../views/adminpanel.vue'),
     meta: { zastiteno: true, samoAdmin: true },
+  },
+  {
+    path: '/knjigovodstvo',
+    name: 'Knjigovodstvo',
+    component: () => import('../views/Knjigovodstvo.vue'),
+    meta: { zastiteno: true, samoKnjigovodstvo: true },
   },
 ];
 
@@ -50,6 +62,9 @@ export function postaviGuard(authStore) {
       return next('/prijava');
     }
     if (to.meta.samoAdmin && !authStore.jeAdmin) {
+      return next('/odabir-prijave');
+    }
+    if (to.meta.samoKnjigovodstvo && !authStore.jeKnjigovodstvo) {
       return next('/odabir-prijave');
     }
     next();

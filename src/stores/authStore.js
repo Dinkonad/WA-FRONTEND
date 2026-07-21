@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const jePrijavljen = computed(() => !!token.value);
   const jeAdmin = computed(() => korisnik.value?.uloga === 'admin');
+  const jeKnjigovodstvo = computed(() => ['admin', 'knjigovodstvo'].includes(korisnik.value?.uloga));
 
   async function prijava(email, lozinka) {
     const { data } = await api.post('/auth/sesija', { email, lozinka });
@@ -73,5 +74,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('korisnik');
   }
 
-  return { token, korisnik, jePrijavljen, jeAdmin, prijava, registracija, dohvatiProfil, spremiSesiju, postaviTokenIzURL, odjava };
+  return { token, korisnik, jePrijavljen, jeAdmin, jeKnjigovodstvo, prijava, registracija, dohvatiProfil, spremiSesiju, postaviTokenIzURL, odjava };
 });

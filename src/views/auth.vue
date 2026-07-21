@@ -147,12 +147,18 @@ function prebaci(naRegistraciju) {
   jeRegistracija.value = naRegistraciju;
 }
 
+function odredistePoUlozi(uloga) {
+  if (uloga === 'admin') return '/admin';
+  if (uloga === 'knjigovodstvo') return '/knjigovodstvo';
+  return '/dashboard';
+}
+
 async function handlePrijava() {
   greska.value = '';
   ucitavanje.value = true;
   try {
     const korisnik = await auth.prijava(prijavaForma.value.email, prijavaForma.value.lozinka);
-    router.push(korisnik.uloga === 'admin' ? '/admin' : '/dashboard');
+    router.push(odredistePoUlozi(korisnik.uloga));
   } catch (error) {
     greska.value = error.response?.data?.poruka || 'Greška pri prijavi.';
   } finally {
@@ -200,7 +206,7 @@ async function handleFaceIdPrijava() {
   try {
     const data = await prijaviSeFaceIdom(prijavaForma.value.email);
     auth.spremiSesiju(data);
-    router.push(data.korisnik.uloga === 'admin' ? '/admin' : '/dashboard');
+    router.push(odredistePoUlozi(data.korisnik.uloga));
   } catch (error) {
     greska.value = 'Face ID prijava neuspješna. Pokušaj s lozinkom.';
     obrisiZapamceniFaceId(prijavaForma.value.email);
