@@ -38,6 +38,18 @@ const routes = [
     meta: { zastiteno: true },
   },
   {
+    path: '/qr-kod',
+    name: 'QrKod',
+    component: () => import('../views/QrKod.vue'),
+    meta: { zastiteno: true },
+  },
+  {
+    path: '/recepcija',
+    name: 'Recepcija',
+    component: () => import('../views/Recepcija.vue'),
+    meta: { zastiteno: true, samoRecepcija: true },
+  },
+  {
     path: '/admin',
     name: 'Admin',
     component: () => import('../views/adminpanel.vue'),
@@ -65,6 +77,9 @@ export function postaviGuard(authStore) {
       return next('/odabir-prijave');
     }
     if (to.meta.samoKnjigovodstvo && !authStore.jeKnjigovodstvo) {
+      return next('/odabir-prijave');
+    }
+    if (to.meta.samoRecepcija && !authStore.jeRecepcija) {
       return next('/odabir-prijave');
     }
     next();

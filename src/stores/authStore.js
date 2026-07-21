@@ -9,11 +9,11 @@ export const useAuthStore = defineStore('auth', () => {
   const jePrijavljen = computed(() => !!token.value);
   const jeAdmin = computed(() => korisnik.value?.uloga === 'admin');
   const jeKnjigovodstvo = computed(() => ['admin', 'knjigovodstvo'].includes(korisnik.value?.uloga));
+  const jeRecepcija = computed(() => ['admin', 'recepcija'].includes(korisnik.value?.uloga));
 
   async function prijava(email, lozinka) {
     const { data } = await api.post('/auth/sesija', { email, lozinka });
     spremiSesiju(data);
-    // Dohvati profil sa strava podacima
     try {
       const profil = await api.get('/korisnici/profil');
       korisnik.value = {
@@ -31,17 +31,6 @@ export const useAuthStore = defineStore('auth', () => {
   async function registracija(ime, email, lozinka) {
     const { data } = await api.post('/korisnici', { ime, email, lozinka });
     spremiSesiju(data);
-    return data.korisnik;
-  }
-
-  async function dohvatiProfil() {
-    const { data } = await api.get('/korisnici/profil');
-    korisnik.value = {
-      ...korisnik.value,
-      ...data.korisnik,
-      stravaProfilna: data.korisnik?.strava?.profilnaSlika,
-    };
-    localStorage.setItem('korisnik', JSON.stringify(korisnik.value));
     return data.korisnik;
   }
 
@@ -74,5 +63,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('korisnik');
   }
 
-  return { token, korisnik, jePrijavljen, jeAdmin, jeKnjigovodstvo, prijava, registracija, dohvatiProfil, spremiSesiju, postaviTokenIzURL, odjava };
+  return { token, korisnik, jePrijavljen, jeAdmin, jeKnjigovodstvo, jeRecepcija, prijava, registracija, spremiSesiju, postaviTokenIzURL, odjava };
 });

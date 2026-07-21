@@ -31,7 +31,6 @@
         <div></div>
       </header>
 
-      <!-- KORAK 1: LISTA -->
       <div v-if="korak === 'lista'" class="sadrzaj">
         <div class="tabovi">
           <button class="tab" :class="{ 'tab-aktivan': tab === 'aktivni' }" @click="tab = 'aktivni'">
@@ -66,7 +65,6 @@
         </div>
       </div>
 
-      <!-- KORAK 2: ODABIR TIPA -->
       <div v-if="korak === 'tip'" class="sadrzaj">
         <button class="gumb-nazad" @click="korak = 'lista'">‹ Nazad</button>
         <div class="tip-grid">
@@ -81,7 +79,6 @@
         </div>
       </div>
 
-      <!-- KORAK 3: FORMA -->
       <div v-if="korak === 'forma'" class="sadrzaj">
         <button class="gumb-nazad" @click="korak = uredjujeSeId ? 'lista' : 'tip'">‹ Nazad</button>
 

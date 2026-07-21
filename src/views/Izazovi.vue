@@ -18,6 +18,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
           <span>IZAZOVI</span>
         </button>
+        <button class="nav-item" @click="router.push('/qr-kod')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+          <span>QR KOD</span>
+        </button>
         <button class="nav-item" @click="router.push('/clanarina')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
@@ -45,7 +49,6 @@
       </header>
 
       <div class="sadrzaj">
-        <!-- LISTA -->
         <template v-if="korak === 'lista'">
           <div v-if="ucitavanje" class="ucitavanje"><div class="spinner"></div></div>
 
@@ -73,7 +76,6 @@
           </div>
         </template>
 
-        <!-- DETALJI -->
         <template v-else-if="korak === 'detalji' && odabraniIzazov">
           <button class="gumb-nazad" @click="korak = 'lista'">‹ Nazad</button>
 
@@ -158,7 +160,6 @@
           </div>
         </template>
 
-        <!-- DETALJI SUDIONIKA -->
         <template v-else-if="korak === 'sudionik'">
           <button class="gumb-nazad" @click="korak = 'detalji'">‹ Nazad na ljestvicu</button>
 
@@ -177,21 +178,22 @@
               </div>
             </div>
 
-            <!-- Kumulativno: po uvjetu -->
             <div v-if="odabraniSudionik.uvjeti" class="sudionik-sekcija">
               <div v-for="(u, idx) in odabraniSudionik.uvjeti" :key="idx" class="uvjet-detalj-blok">
                 <div class="uvjet-detalj-naslov">
                   {{ tipIkona(u.tip) }} {{ tipNaziv(u.tip) }} — {{ zaokruzi(u.napredak) }} / {{ u.cilj }} {{ jedinicaTeksta(u.mjera) }} → <b>{{ u.bodoviOstvareno }} bodova</b>
                 </div>
                 <div v-if="u.aktivnosti.length === 0" class="prazno-malo">Nema aktivnosti koje se broje.</div>
-                <div v-for="a in u.aktivnosti" :key="a.stravaId" class="sudionik-aktivnost-red">
+                <div v-for="a in u.aktivnosti" :key="a.stravaId" class="sudionik-aktivnost-red" :class="{ 'sudionik-aktivnost-bez-bodova': !a.bodoviOstvareno }">
                   <span>{{ tipIkona(a.tip) }} {{ a.naziv }}</span>
-                  <span class="sudionik-aktivnost-vrijednost">{{ formatirajDatum(a.datum) }} · {{ vrijednostAktivnosti(a, u.mjera) }}</span>
+                  <span class="sudionik-aktivnost-vrijednost">
+                    {{ formatirajDatum(a.datum) }} · {{ vrijednostAktivnosti(a, u.mjera) }}
+                    <template v-if="a.bodoviOstvareno != null"> · {{ a.bodoviOstvareno }} bod.</template>
+                  </span>
                 </div>
               </div>
             </div>
 
-            <!-- Dnevno: po danu -->
             <div v-else-if="odabraniSudionik.dani" class="sudionik-sekcija">
               <div v-for="(d, idx) in odabraniSudionik.dani" :key="idx" class="dan-blok" :class="{ 'dan-nije-prosao': !d.prosao }">
                 <div class="dan-naslov">
@@ -688,6 +690,8 @@ onMounted(() => {
 .sudionik-aktivnost-red:first-of-type { border-top: none; }
 
 .sudionik-aktivnost-vrijednost { color: #f5c800; flex-shrink: 0; white-space: nowrap; }
+.sudionik-aktivnost-bez-bodova { opacity: 0.4; }
+.sudionik-aktivnost-bez-bodova .sudionik-aktivnost-vrijednost { color: rgba(255,255,255,0.4); }
 
 .gumb-nazad {
   background: none;

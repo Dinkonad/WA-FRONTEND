@@ -150,6 +150,7 @@ function prebaci(naRegistraciju) {
 function odredistePoUlozi(uloga) {
   if (uloga === 'admin') return '/admin';
   if (uloga === 'knjigovodstvo') return '/knjigovodstvo';
+  if (uloga === 'recepcija') return '/recepcija';
   return '/dashboard';
 }
 

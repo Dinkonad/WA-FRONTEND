@@ -18,6 +18,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
           <span>IZAZOVI</span>
         </button>
+        <button class="nav-item" @click="router.push('/qr-kod')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+          <span>QR KOD</span>
+        </button>
         <button class="nav-item" @click="router.push('/clanarina')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
@@ -60,7 +64,6 @@
 
       <div v-else>
 
-        <!-- STATS KARTICE -->
         <div class="stats-row">
           <div class="stat-box">
             <div class="stat-broj">{{ periodFiltrirane.length }}</div>
@@ -80,7 +83,6 @@
           </div>
         </div>
 
-        <!-- UKUPNO: donut + tablica po sportu -->
         <template v-if="aktivniPeriod === 'ukupno' || aktivniPeriod === 'godisnje'">
           <div class="sazetak-kartica">
             <div class="donut-wrap">
@@ -112,7 +114,6 @@
           </div>
         </template>
 
-        <!-- GODIŠNJE: bar chart po mjesecima + breakdown + dodatne statistike -->
         <template v-if="aktivniPeriod === 'godisnje'">
           <div class="navigacija-period">
             <button class="nav-strelica" @click="godinaOffset--">‹</button>
@@ -189,7 +190,6 @@
           </div>
         </template>
 
-        <!-- TJEDNO: bar chart po danima -->
         <template v-if="aktivniPeriod === 'tjedno'">
           <div class="navigacija-period">
             <button class="nav-strelica" @click="tjedanOffset--">‹</button>
@@ -211,7 +211,6 @@
           </div>
         </template>
 
-        <!-- MJESEČNO: kalendar -->
         <template v-if="aktivniPeriod === 'mjesecno'">
           <div class="navigacija-period">
             <button class="nav-strelica" @click="mjesecOffset--">‹</button>
@@ -460,7 +459,6 @@ const periodFiltrirane = computed(() => {
   return filtered;
 });
 
-// Puna lista za odabrani period (stats/donut) - nije odsječena paginacijom.
 const filtrirane = computed(() => periodFiltrirane.value.slice(0, prikazano.value));
 
 function miesecOffset() { return mjesecOffset.value; }
@@ -697,7 +695,11 @@ async function otvoriAktivnost(akt) {
   if (!akt.polyline) return;
   await nextTick();
   await new Promise(r => setTimeout(r, 200));
-  await inicijalizirajKartu(akt);
+  try {
+    await inicijalizirajKartu(akt);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function inicijalizirajKartu(akt) {

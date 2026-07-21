@@ -18,6 +18,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
           <span>IZAZOVI</span>
         </button>
+        <button class="nav-item" @click="router.push('/qr-kod')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+          <span>QR KOD</span>
+        </button>
         <button class="nav-item active">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
@@ -47,34 +51,44 @@
       <div class="sadrzaj">
         <div v-if="ucitavanje" class="ucitavanje"><div class="spinner"></div></div>
 
-        <!-- POSTOJEĆI ZAHTJEV -->
-        <template v-else-if="mojZahtjev && mojZahtjev.status !== 'odbijeno'">
+        <template v-else-if="mojZahtjev && mojZahtjev.status === 'na_cekanju'">
           <div class="status-kartica">
-            <div class="status-ikona">{{ mojZahtjev.status === 'odobreno' ? '✅' : '⏳' }}</div>
-            <h2 class="status-naslov">
-              {{ mojZahtjev.status === 'odobreno' ? 'Članarina odobrena!' : 'Zahtjev na čekanju' }}
-            </h2>
+            <div class="status-ikona">⏳</div>
+            <h2 class="status-naslov">Zahtjev na čekanju</h2>
             <p class="status-tekst">
-              {{ planovi[mojZahtjev.plan]?.naziv }} plan · {{ mojZahtjev.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · ${{ mojZahtjev.cijena }}
+              {{ planovi[mojZahtjev.plan]?.naziv }} plan · {{ mojZahtjev.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · {{ mojZahtjev.cijena }} €
             </p>
-            <p v-if="mojZahtjev.status === 'na_cekanju'" class="status-napomena">
+            <p class="status-napomena">
               Vaša prijava je poslana knjigovodstvu na pregled, javit ćemo vam povratno kada prođe uplata.
             </p>
           </div>
         </template>
 
-        <!-- ODBIJENO -->
-        <template v-else-if="mojZahtjev && mojZahtjev.status === 'odbijeno' && korak === 'status'">
+        <template v-else-if="mojZahtjev && mojZahtjev.status === 'odobreno' && !istekla">
+          <div class="status-kartica">
+            <div class="status-ikona">✅</div>
+            <h2 class="status-naslov">Članarina odobrena!</h2>
+            <p class="status-tekst">
+              {{ planovi[mojZahtjev.plan]?.naziv }} plan · {{ mojZahtjev.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · {{ mojZahtjev.cijena }} €
+            </p>
+            <p class="status-napomena">Članarina vrijedi do {{ formatirajDatum(vrijediDo) }}.</p>
+          </div>
+        </template>
+
+        <template v-else-if="mojZahtjev && mojZahtjev.status === 'odbijeno' && !zapoceoNoviZahtjev">
           <div class="status-kartica status-odbijeno">
             <div class="status-ikona">❌</div>
             <h2 class="status-naslov">Zahtjev odbijen</h2>
             <p v-if="mojZahtjev.napomenaOdbijanja" class="status-tekst">{{ mojZahtjev.napomenaOdbijanja }}</p>
-            <button class="gumb-zuti" @click="korak = 'plan'">Pošalji novi zahtjev</button>
+            <button class="gumb-zuti" @click="zapoceoNoviZahtjev = true">Pošalji novi zahtjev</button>
           </div>
         </template>
 
-        <!-- KORAK: PLAN -->
         <template v-else-if="korak === 'plan'">
+          <div v-if="mojZahtjev?.status === 'odobreno' && istekla" class="obavijest-isteklo">
+            Tvoja članarina je istekla {{ formatirajDatum(vrijediDo) }}. Odaberi novi plan za nastavak.
+          </div>
+
           <div class="period-izbor">
             <button class="period-gumb" :class="{ 'period-aktivan': period === 'mjesecno' }" @click="period = 'mjesecno'">Monthly</button>
             <button class="period-gumb" :class="{ 'period-aktivan': period === 'godisnje' }" @click="period = 'godisnje'">Yearly</button>
@@ -84,7 +98,7 @@
             <div v-for="(p, kljuc) in planovi" :key="kljuc" class="plan-kartica" :class="{ 'plan-istaknut': kljuc === 'basic' }">
               <div class="plan-naziv">{{ p.naziv.toUpperCase() }}</div>
               <div class="plan-cijena">
-                ${{ period === 'godisnje' ? p.mjesecno * 12 : p.mjesecno }}<span class="plan-period">/{{ period === 'godisnje' ? 'god' : 'mo' }}</span>
+                {{ period === 'godisnje' ? p.mjesecno * 12 : p.mjesecno }}€<span class="plan-period">/{{ period === 'godisnje' ? 'god' : 'mo' }}</span>
               </div>
               <ul class="plan-znacajke">
                 <li v-for="(z, i) in p.znacajke" :key="i">{{ z }}</li>
@@ -94,7 +108,6 @@
           </div>
         </template>
 
-        <!-- KORAK: INFO -->
         <template v-else-if="korak === 'info'">
           <button class="gumb-nazad" @click="korak = 'plan'">‹ Nazad</button>
           <div class="forma-kartica">
@@ -124,7 +137,6 @@
           </div>
         </template>
 
-        <!-- KORAK: PLAĆANJE -->
         <template v-else-if="korak === 'placanje'">
           <button class="gumb-nazad" @click="korak = 'info'">‹ Nazad</button>
           <div class="placanje-kartica">
@@ -135,7 +147,7 @@
             </div>
             <div class="iban-info">
               <div><b>IBAN:</b> {{ GYM_IBAN }}</div>
-              <div><b>Iznos:</b> ${{ odabraniPlan ? (period === 'godisnje' ? planovi[odabraniPlan].mjesecno * 12 : planovi[odabraniPlan].mjesecno) : 0 }}</div>
+              <div><b>Iznos:</b> {{ odabraniPlan ? (period === 'godisnje' ? planovi[odabraniPlan].mjesecno * 12 : planovi[odabraniPlan].mjesecno) : 0 }} €</div>
               <div><b>Poziv na broj:</b> {{ auth.korisnik?._id?.slice(-8) }}</div>
               <div><b>Opis plaćanja:</b> Članarina {{ planovi[odabraniPlan]?.naziv }} — {{ auth.korisnik?.ime }}</div>
             </div>
@@ -173,6 +185,9 @@ const period = ref('mjesecno');
 const odabraniPlan = ref(null);
 const planovi = ref({});
 const mojZahtjev = ref(null);
+const vrijediDo = ref(null);
+const istekla = ref(false);
+const zapoceoNoviZahtjev = ref(false);
 
 const forma = ref({ imePrezime: '', godiste: null, spol: '', broj: '' });
 
@@ -201,10 +216,16 @@ async function ucitajPlanove() {
   }
 }
 
+function formatirajDatum(datum) {
+  return new Date(datum).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 async function ucitajMojZahtjev() {
   try {
     const { data } = await api.get('/clanarina/moja');
     mojZahtjev.value = data.zahtjev;
+    vrijediDo.value = data.vrijediDo;
+    istekla.value = data.istekla;
   } catch (err) {
     console.error(err);
   }
@@ -226,6 +247,8 @@ async function posaljiZahtjev() {
       ...forma.value,
     });
     mojZahtjev.value = data.zahtjev;
+    vrijediDo.value = null;
+    istekla.value = false;
   } catch (err) {
     greska.value = err.response?.data?.poruka || 'Greška pri slanju zahtjeva.';
   } finally {
@@ -358,6 +381,18 @@ onMounted(async () => {
   animation: rotacija 0.8s linear infinite;
 }
 @keyframes rotacija { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.obavijest-isteklo {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5;
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto 1.5rem;
+}
 
 .period-izbor {
   display: flex;

@@ -35,12 +35,10 @@
         <div></div>
       </header>
 
-      <!-- STATISTIKA: prazno za sada -->
       <div v-if="prikaz === 'statistika'" class="sadrzaj">
         <div class="prazno-veliko">Statistika dolazi uskoro.</div>
       </div>
 
-      <!-- ČLANARINA: pregled zahtjeva -->
       <div v-else class="sadrzaj">
         <div class="tabovi">
           <button class="tab" :class="{ 'tab-aktivan': tab === 'na_cekanju' }" @click="tab = 'na_cekanju'">Na čekanju</button>
@@ -57,7 +55,7 @@
             <div class="zahtjev-info">
               <div class="zahtjev-glavno">
                 <span class="zahtjev-ime">{{ z.korisnikId?.ime || z.imePrezime }}</span>
-                <span class="zahtjev-plan">{{ z.plan.toUpperCase() }} · {{ z.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · ${{ z.cijena }}</span>
+                <span class="zahtjev-plan">{{ z.plan.toUpperCase() }} · {{ z.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · {{ z.cijena }} €</span>
               </div>
               <div class="zahtjev-detalji">
                 <span>{{ z.korisnikId?.email }}</span>
@@ -69,9 +67,23 @@
               <p v-if="z.status === 'odbijeno' && z.napomenaOdbijanja" class="zahtjev-napomena">Razlog: {{ z.napomenaOdbijanja }}</p>
             </div>
 
-            <div v-if="z.status === 'na_cekanju'" class="zahtjev-akcije">
-              <button class="gumb-odobri" :disabled="obradujem === z._id" @click="odobri(z)">Odobri</button>
-              <button class="gumb-odbij" :disabled="obradujem === z._id" @click="odbij(z)">Odbij</button>
+            <div class="zahtjev-akcije">
+              <template v-if="z.status === 'na_cekanju'">
+                <button class="gumb-odobri" :disabled="obradujem === z._id" @click="odobri(z)">Odobri</button>
+                <button class="gumb-odbij" :disabled="obradujem === z._id" @click="otvoriOdbijanje(z)">Odbij</button>
+              </template>
+              <button class="gumb-obrisi" :disabled="obradujem === z._id" @click="obrisi(z)" title="Obriši">✕</button>
+            </div>
+
+            <div v-if="otvoreniOdbij === z._id" class="odbijanje-forma">
+              <input
+                v-model="napomenaUnos"
+                class="odbijanje-input"
+                placeholder="Razlog odbijanja (opcionalno)"
+                @keyup.enter="potvrdiOdbijanje(z)"
+              />
+              <button class="gumb-potvrdi-odbijanje" :disabled="obradujem === z._id" @click="potvrdiOdbijanje(z)">Potvrdi</button>
+              <button class="gumb-otkazi-odbijanje" @click="otvoreniOdbij = null">Odustani</button>
             </div>
           </div>
         </div>
@@ -95,6 +107,8 @@ const tab = ref('na_cekanju');
 const ucitavanje = ref(false);
 const zahtjevi = ref([]);
 const obradujem = ref(null);
+const otvoreniOdbij = ref(null);
+const napomenaUnos = ref('');
 
 const inicijali = computed(() => {
   const ime = auth.korisnik?.ime || '';
@@ -129,11 +143,29 @@ async function odobri(z) {
   }
 }
 
-async function odbij(z) {
-  const napomena = prompt('Razlog odbijanja (opcionalno):') || '';
+function otvoriOdbijanje(z) {
+  otvoreniOdbij.value = z._id;
+  napomenaUnos.value = '';
+}
+
+async function potvrdiOdbijanje(z) {
   obradujem.value = z._id;
   try {
-    await api.put(`/clanarina/${z._id}/odbij`, { napomena });
+    await api.put(`/clanarina/${z._id}/odbij`, { napomena: napomenaUnos.value });
+    zahtjevi.value = zahtjevi.value.filter(x => x._id !== z._id);
+    otvoreniOdbij.value = null;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    obradujem.value = null;
+  }
+}
+
+async function obrisi(z) {
+  if (!confirm(`Sigurno obrisati zahtjev za "${z.korisnikId?.ime || z.imePrezime}"? Ovo se ne može poništiti.`)) return;
+  obradujem.value = z._id;
+  try {
+    await api.delete(`/clanarina/${z._id}`);
     zahtjevi.value = zahtjevi.value.filter(x => x._id !== z._id);
   } catch (err) {
     console.error(err);
@@ -301,6 +333,7 @@ onMounted(() => {
 
 .red-zahtjeva {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
@@ -330,6 +363,51 @@ onMounted(() => {
 
 .zahtjev-akcije { display: flex; gap: 0.5rem; flex-shrink: 0; }
 
+.odbijanje-forma {
+  width: 100%;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.odbijanje-input {
+  flex: 1;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  padding: 0.55rem 0.85rem;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.85rem;
+}
+.odbijanje-input:focus { outline: none; border-color: #f5c800; }
+
+.gumb-potvrdi-odbijanje {
+  background: #f5c800;
+  border: none;
+  color: #1a1a1a;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.gumb-potvrdi-odbijanje:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.gumb-otkazi-odbijanje {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.5);
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.gumb-otkazi-odbijanje:hover { color: #fff; }
+
 .gumb-odobri {
   background: rgba(74,222,128,0.15);
   border: 1px solid rgba(74,222,128,0.35);
@@ -356,7 +434,19 @@ onMounted(() => {
 }
 .gumb-odbij:hover:not(:disabled) { background: rgba(239,68,68,0.22); }
 
-.gumb-odobri:disabled, .gumb-odbij:disabled { opacity: 0.5; cursor: not-allowed; }
+.gumb-obrisi {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.4);
+  width: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color 0.2s, color 0.2s;
+}
+.gumb-obrisi:hover:not(:disabled) { border-color: #fca5a5; color: #fca5a5; }
+
+.gumb-odobri:disabled, .gumb-odbij:disabled, .gumb-obrisi:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 768px) {
   .sidebar {

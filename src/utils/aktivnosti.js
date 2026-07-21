@@ -35,10 +35,12 @@ export function dekodirajPolyline(encoded) {
 }
 
 export function ucitajSkriptu(src) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
     const s = document.createElement('script');
-    s.src = src; s.onload = resolve;
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(`Neuspjelo učitavanje skripte: ${src}`));
     document.head.appendChild(s);
   });
 }
