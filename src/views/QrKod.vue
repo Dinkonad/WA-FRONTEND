@@ -5,6 +5,11 @@
       <div class="sidebar-logo">
         <img src="../assets/logo.png" alt="logo" class="logo-img" />
       </div>
+      <div v-if="brojUTeretani !== null" class="guzva-sidebar">
+        <span class="guzva-tocka"></span>
+        <span class="guzva-broj-sidebar">{{ brojUTeretani }}</span>
+        <span class="guzva-tekst-sidebar">u teretani</span>
+      </div>
       <nav class="sidebar-nav">
         <button class="nav-item" @click="router.push('/dashboard')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -49,19 +54,21 @@
       </header>
 
       <div class="sadrzaj">
-        <div class="qr-kartica">
-          <div v-if="ucitavanje" class="ucitavanje"><div class="spinner"></div></div>
+        <div class="stupac">
+          <div class="qr-kartica">
+            <div v-if="ucitavanje" class="ucitavanje"><div class="spinner"></div></div>
 
-          <template v-else-if="!token">
-            <p class="qr-napomena">QR kod će biti vidljiv tek kada prođe uplata</p>
-          </template>
+            <template v-else-if="!token">
+              <p class="qr-napomena">QR kod će biti vidljiv tek kada prođe uplata</p>
+            </template>
 
-          <template v-else>
-            <p class="qr-vazi">Vrijedi do {{ formatirajDatum(vrijediDo) }}</p>
-            <div class="qr-slika-wrap">
-              <div ref="qrContainerRef" class="qr-slika"></div>
-            </div>
-          </template>
+            <template v-else>
+              <p class="qr-vazi">Vrijedi do {{ formatirajDatum(vrijediDo) }}</p>
+              <div class="qr-slika-wrap">
+                <div ref="qrContainerRef" class="qr-slika"></div>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
     </main>
@@ -83,6 +90,7 @@ const ucitavanje = ref(false);
 const token = ref(null);
 const vrijediDo = ref(null);
 const qrContainerRef = ref(null);
+const brojUTeretani = ref(null);
 
 const inicijali = computed(() => {
   const ime = auth.korisnik?.ime || '';
@@ -119,6 +127,15 @@ async function ucitajQrKod() {
   }
 }
 
+async function ucitajBrojUTeretani() {
+  try {
+    const { data } = await api.get('/clanarina/broj-u-teretani');
+    brojUTeretani.value = data.broj;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 function handleOdjava() {
   auth.odjava();
   router.push('/prijava');
@@ -126,6 +143,7 @@ function handleOdjava() {
 
 onMounted(() => {
   ucitajQrKod();
+  ucitajBrojUTeretani();
 });
 </script>
 
@@ -164,6 +182,41 @@ onMounted(() => {
 }
 
 .logo-img { width: 85px; height: 85px; object-fit: contain; }
+
+.guzva-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 1rem 1rem 1.25rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0,0,0,0.12);
+  border-radius: 20px;
+}
+
+.guzva-tocka {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a7a3e;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(26,122,62,0.6);
+}
+
+.guzva-broj-sidebar {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  color: #1a1a1a;
+  font-size: 1rem;
+}
+
+.guzva-tekst-sidebar {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(0,0,0,0.6);
+  letter-spacing: 0.03em;
+}
 
 .sidebar-nav {
   flex: 1;
@@ -243,15 +296,24 @@ onMounted(() => {
 }
 @keyframes rotacija { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+.stupac {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 420px;
+}
+
 .qr-kartica {
   background: #252525;
   border: 1px solid rgba(245,200,0,0.3);
   border-radius: 20px;
   padding: 2.5rem 2rem;
-  max-width: 420px;
   width: 100%;
   text-align: center;
 }
+
 
 .qr-napomena {
   color: rgba(255,255,255,0.5);

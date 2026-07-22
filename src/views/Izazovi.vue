@@ -5,6 +5,11 @@
       <div class="sidebar-logo">
         <img src="../assets/logo.png" alt="logo" class="logo-img" />
       </div>
+      <div v-if="brojUTeretani !== null" class="guzva-sidebar">
+        <span class="guzva-tocka"></span>
+        <span class="guzva-broj-sidebar">{{ brojUTeretani }}</span>
+        <span class="guzva-tekst-sidebar">u teretani</span>
+      </div>
       <nav class="sidebar-nav">
         <button class="nav-item" @click="router.push('/dashboard')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -242,6 +247,7 @@ function vrijednostAktivnosti(a, mjera) {
 }
 
 const mobilniMeni = ref(false);
+const brojUTeretani = ref(null);
 const ucitavanje = ref(false);
 const izazovi = ref([]);
 const pridruzivanje = ref(null);
@@ -350,8 +356,18 @@ function handleOdjava() {
   router.push('/prijava');
 }
 
+async function ucitajBrojUTeretani() {
+  try {
+    const { data } = await api.get('/clanarina/broj-u-teretani');
+    brojUTeretani.value = data.broj;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 onMounted(() => {
   ucitajIzazove();
+  ucitajBrojUTeretani();
 });
 </script>
 
@@ -390,6 +406,41 @@ onMounted(() => {
 }
 
 .logo-img { width: 85px; height: 85px; object-fit: contain; }
+
+.guzva-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 1rem 1rem 1.25rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0,0,0,0.12);
+  border-radius: 20px;
+}
+
+.guzva-tocka {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a7a3e;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(26,122,62,0.6);
+}
+
+.guzva-broj-sidebar {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  color: #1a1a1a;
+  font-size: 1rem;
+}
+
+.guzva-tekst-sidebar {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(0,0,0,0.6);
+  letter-spacing: 0.03em;
+}
 
 .sidebar-nav {
   flex: 1;

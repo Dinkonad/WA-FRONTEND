@@ -18,6 +18,7 @@
             <template v-if="rezultat.validno">
               <div class="rezultat-ime">{{ rezultat.ime }}</div>
               <div class="rezultat-plan">{{ rezultat.plan?.toUpperCase() }} · vrijedi do {{ formatirajDatum(rezultat.vrijediDo) }}</div>
+              <div class="rezultat-ulaz">Ulaz {{ rezultat.ulazakBroj }}/{{ rezultat.ulazakLimit }} danas</div>
             </template>
             <template v-else>
               <div class="rezultat-ime">Nevažeći QR kod</div>
@@ -260,6 +261,13 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
   color: rgba(255,255,255,0.6);
   margin-top: 0.25rem;
+}
+
+.rezultat-ulaz {
+  font-size: 0.8rem;
+  color: #f5c800;
+  margin-top: 0.4rem;
+  font-weight: 700;
 }
 
 .uputa {
