@@ -5,9 +5,9 @@
       <div class="sidebar-logo">
         <img src="../assets/logo.png" alt="logo" class="logo-img" />
       </div>
-      <div v-if="brojUTeretani !== null" class="guzva-sidebar">
+      <div class="guzva-sidebar">
         <span class="guzva-tocka"></span>
-        <span class="guzva-broj-sidebar">{{ brojUTeretani }}</span>
+        <span class="guzva-broj-sidebar">{{ brojUTeretani !== null ? brojUTeretani : '–' }}</span>
         <span class="guzva-tekst-sidebar">u teretani</span>
       </div>
       <nav class="sidebar-nav">

@@ -5,9 +5,9 @@
       <div class="sidebar-logo">
         <img src="../assets/logo.png" alt="logo" class="logo-img" />
       </div>
-      <div v-if="brojUTeretani !== null" class="guzva-sidebar">
+      <div class="guzva-sidebar">
         <span class="guzva-tocka"></span>
-        <span class="guzva-broj-sidebar">{{ brojUTeretani }}</span>
+        <span class="guzva-broj-sidebar">{{ brojUTeretani !== null ? brojUTeretani : '–' }}</span>
         <span class="guzva-tekst-sidebar">u teretani</span>
       </div>
       <nav class="sidebar-nav">
@@ -121,7 +121,8 @@ async function ucitajQrKod() {
       await ucitajSkriptu('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
     }
     qrContainerRef.value.innerHTML = '';
-    new window.QRCode(qrContainerRef.value, { text: token.value, width: 260, height: 260 });
+    const velicina = window.innerWidth < 400 ? 200 : 240;
+    new window.QRCode(qrContainerRef.value, { text: token.value, width: velicina, height: velicina });
   } catch (err) {
     console.error(err);
   }
@@ -333,9 +334,17 @@ onMounted(() => {
   border-radius: 12px;
   padding: 1.25rem;
   display: inline-block;
+  max-width: 100%;
 }
 
-.qr-slika { display: block; }
+.qr-slika { display: block; max-width: 100%; }
+.qr-slika :deep(canvas),
+.qr-slika :deep(img) {
+  max-width: 100%;
+  height: auto !important;
+  width: auto !important;
+  display: block;
+}
 
 @media (max-width: 768px) {
   .sidebar {
@@ -347,5 +356,11 @@ onMounted(() => {
   .overlay { display: block; }
   .hamburger { display: flex; }
   .header { padding: 1.1rem 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .sadrzaj { padding: 1rem; }
+  .qr-kartica { padding: 1.75rem 1.25rem; }
+  .qr-slika-wrap { padding: 0.85rem; }
 }
 </style>

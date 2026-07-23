@@ -12,13 +12,23 @@
 
         <div v-if="greskaKamere" class="poruka-preko">{{ greskaKamere }}</div>
 
+        <div v-if="pitanjeTip" class="pitanje-preko">
+          <div class="pitanje-tekst">Je li član ušao ili izlazi?</div>
+          <div class="pitanje-gumbi">
+            <button class="gumb-tip gumb-ulaz" @click="odaberiTip('ulaz')">ULAZAK</button>
+            <button class="gumb-tip gumb-izlaz" @click="odaberiTip('izlaz')">IZLAZAK</button>
+          </div>
+          <button class="gumb-otkazi-pitanje" @click="otkaziPitanje">Otkaži</button>
+        </div>
+
         <div v-if="rezultat" class="rezultat-preko">
           <div class="rezultat-ikona">{{ rezultat.validno ? '✓' : '✕' }}</div>
           <div class="rezultat-tekst">
             <template v-if="rezultat.validno">
               <div class="rezultat-ime">{{ rezultat.ime }}</div>
               <div class="rezultat-plan">{{ rezultat.plan?.toUpperCase() }} · vrijedi do {{ formatirajDatum(rezultat.vrijediDo) }}</div>
-              <div class="rezultat-ulaz">Ulaz {{ rezultat.ulazakBroj }}/{{ rezultat.ulazakLimit }} danas</div>
+              <div class="rezultat-tip">{{ rezultat.tip === 'ulaz' ? 'ULAZAK' : 'IZLAZAK' }}</div>
+              <div class="rezultat-ulaz">{{ rezultat.tip === 'ulaz' ? 'Ulaz' : 'Izlaz' }} {{ rezultat.brojDanas }}/{{ rezultat.limitDanas }} danas</div>
             </template>
             <template v-else>
               <div class="rezultat-ime">Nevažeći QR kod</div>
@@ -47,11 +57,13 @@ const videoRef = ref(null);
 const canvasRef = ref(null);
 const rezultat = ref(null);
 const greskaKamere = ref('');
+const pitanjeTip = ref(false);
 
 let stream = null;
 let animacijaId = null;
 let obradaUToku = false;
 let zakljucanoDo = 0;
+let ocitaniToken = null;
 
 function formatirajDatum(datum) {
   return new Date(datum).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -89,17 +101,28 @@ function petljaSkeniranja() {
 
     const kod = window.jsQR(slika.data, slika.width, slika.height);
     if (kod?.data) {
-      provjeriKod(kod.data);
+      obradaUToku = true;
+      ocitaniToken = kod.data;
+      pitanjeTip.value = true;
     }
   };
 
   animacijaId = requestAnimationFrame(obradiFrame);
 }
 
-async function provjeriKod(tekst) {
-  obradaUToku = true;
+function otkaziPitanje() {
+  pitanjeTip.value = false;
+  ocitaniToken = null;
+  obradaUToku = false;
+}
+
+async function odaberiTip(tip) {
+  pitanjeTip.value = false;
+  const tekst = ocitaniToken;
+  ocitaniToken = null;
+
   try {
-    const { data } = await api.post('/clanarina/qr/provjeri', { token: tekst });
+    const { data } = await api.post('/clanarina/qr/provjeri', { token: tekst, tip });
     rezultat.value = data;
   } catch (err) {
     rezultat.value = { validno: false, poruka: 'Greška pri provjeri.' };
@@ -235,6 +258,70 @@ onBeforeUnmount(() => {
   background: rgba(0,0,0,0.75);
   text-align: center;
   padding: 1.5rem;
+}
+
+.pitanje-preko {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background: rgba(0,0,0,0.88);
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.pitanje-tekst {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.pitanje-gumbi {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.gumb-tip {
+  flex: 1;
+  padding: 1.1rem 0.5rem;
+  border-radius: 12px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+.gumb-tip:hover { opacity: 0.85; }
+
+.gumb-ulaz { background: #4ade80; color: #0a2e1a; }
+.gumb-izlaz { background: #f87171; color: #2e0a0a; }
+
+.gumb-otkazi-pitanje {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.5);
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.85rem;
+}
+.gumb-otkazi-pitanje:hover { color: #fff; }
+
+.rezultat-tip {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  margin-top: 0.5rem;
 }
 
 .rezultat-ikona {
