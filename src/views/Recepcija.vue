@@ -21,6 +21,11 @@
           <button class="gumb-otkazi-pitanje" @click="otkaziPitanje">Otkaži</button>
         </div>
 
+        <div v-if="provjeravam" class="pitanje-preko">
+          <div class="spinner-veliki"></div>
+          <div class="pitanje-tekst">Provjeravam...</div>
+        </div>
+
         <div v-if="rezultat" class="rezultat-preko">
           <div class="rezultat-ikona">{{ rezultat.validno ? '✓' : '✕' }}</div>
           <div class="rezultat-tekst">
@@ -58,6 +63,7 @@ const canvasRef = ref(null);
 const rezultat = ref(null);
 const greskaKamere = ref('');
 const pitanjeTip = ref(false);
+const provjeravam = ref(false);
 
 let stream = null;
 let animacijaId = null;
@@ -118,6 +124,7 @@ function otkaziPitanje() {
 
 async function odaberiTip(tip) {
   pitanjeTip.value = false;
+  provjeravam.value = true;
   const tekst = ocitaniToken;
   ocitaniToken = null;
 
@@ -125,8 +132,10 @@ async function odaberiTip(tip) {
     const { data } = await api.post('/clanarina/qr/provjeri', { token: tekst, tip });
     rezultat.value = data;
   } catch (err) {
+    console.error(err);
     rezultat.value = { validno: false, poruka: 'Greška pri provjeri.' };
   } finally {
+    provjeravam.value = false;
     zakljucanoDo = Date.now() + 3000;
     setTimeout(() => {
       rezultat.value = null;
@@ -279,6 +288,16 @@ onBeforeUnmount(() => {
   font-weight: 800;
   color: #fff;
 }
+
+.spinner-veliki {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(245,200,0,0.2);
+  border-top-color: #f5c800;
+  border-radius: 50%;
+  animation: rotacija-spinner 0.8s linear infinite;
+}
+@keyframes rotacija-spinner { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .pitanje-gumbi {
   display: flex;
