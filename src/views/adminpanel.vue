@@ -15,13 +15,6 @@
           <span>IZAZOVI</span>
         </button>
       </nav>
-      <div class="sidebar-korisnik">
-        <div class="korisnik-inicijali">{{ inicijali }}</div>
-        <div class="korisnik-info">
-          <span class="korisnik-ime">{{ auth.korisnik?.ime }}</span>
-          <button class="gumb-odjava" @click="handleOdjava">Odjava</button>
-        </div>
-      </div>
     </aside>
 
     <div v-if="mobilniMeni" class="overlay" @click="mobilniMeni = false"></div>
@@ -32,7 +25,7 @@
           <span></span><span></span><span></span>
         </button>
         <h1 class="header-naslov">{{ prikaz === 'dashboard' ? 'Dashboard' : 'Izazovi' }}</h1>
-        <div></div>
+        <OdjavaKrug />
       </header>
 
       <div v-if="prikaz === 'dashboard'" class="sadrzaj">
@@ -250,13 +243,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
 import { formatirajDatum } from '../utils/aktivnosti.js';
-
-const router = useRouter();
-const auth = useAuthStore();
+import OdjavaKrug from '../components/OdjavaKrug.vue';
 
 const TIPOVI = [
   { tip: 'Run', naziv: 'Trčanje' },
@@ -401,11 +390,6 @@ const uredjujeSeId = ref(null);
 const forma = reactive({ naziv: '', opis: '', vrsta: 'solo', nacin: 'kumulativno', pocetak: '', kraj: '' });
 const uvjetiForma = reactive(praznaUvjetiForma());
 
-const inicijali = computed(() => {
-  const ime = auth.korisnik?.ime || '';
-  return ime.split(' ').map(r => r[0]).join('').toUpperCase().slice(0, 2);
-});
-
 const prikazaniIzazovi = computed(() => tab.value === 'aktivni' ? aktivniIzazovi.value : prosliIzazovi.value);
 
 function jedinicaTeksta(mjera) {
@@ -500,11 +484,6 @@ async function obrisiIzazov(izazov) {
   } catch (err) {
     console.error(err);
   }
-}
-
-function handleOdjava() {
-  auth.odjava();
-  router.push('/prijava');
 }
 
 onMounted(() => {

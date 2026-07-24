@@ -23,13 +23,6 @@
           <span>ČLANARINA</span>
         </button>
       </nav>
-      <div class="sidebar-korisnik">
-        <div class="korisnik-inicijali">{{ inicijali }}</div>
-        <div class="korisnik-info">
-          <span class="korisnik-ime">{{ auth.korisnik?.ime }}</span>
-          <button class="gumb-odjava" @click="handleOdjava">Odjava</button>
-        </div>
-      </div>
     </aside>
 
     <div v-if="mobilniMeni" class="overlay" @click="mobilniMeni = false"></div>
@@ -40,7 +33,7 @@
           <span></span><span></span><span></span>
         </button>
         <h1 class="header-naslov">{{ naslovi[prikaz] }}</h1>
-        <div></div>
+        <OdjavaKrug />
       </header>
 
       <!-- STATISTIKA -->
@@ -271,22 +264,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
-
-const router = useRouter();
-const auth = useAuthStore();
+import OdjavaKrug from '../components/OdjavaKrug.vue';
 
 const mobilniMeni = ref(false);
 const prikaz = ref('statistika');
 
 const naslovi = { statistika: 'Statistika', prihod: 'Prihod', rashod: 'Rashod', clanarina: 'Članarina' };
-
-const inicijali = computed(() => {
-  const ime = auth.korisnik?.ime || '';
-  return ime.split(' ').map(r => r[0]).join('').toUpperCase().slice(0, 2);
-});
 
 function formatirajDatum(datum) {
   const d = new Date(datum);
@@ -548,11 +532,6 @@ async function izvezi() {
   } catch (err) {
     console.error(err);
   }
-}
-
-function handleOdjava() {
-  auth.odjava();
-  router.push('/prijava');
 }
 
 onMounted(() => {

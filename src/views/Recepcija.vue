@@ -2,7 +2,7 @@
   <div class="stranica">
     <header class="header">
       <h1 class="naslov">Recepcija — skeniranje QR koda</h1>
-      <button class="gumb-odjava" @click="handleOdjava">Odjava</button>
+      <OdjavaKrug />
     </header>
 
     <div class="sadrzaj">
@@ -61,13 +61,9 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
 import { ucitajSkriptu } from '../utils/aktivnosti.js';
-
-const router = useRouter();
-const auth = useAuthStore();
+import OdjavaKrug from '../components/OdjavaKrug.vue';
 
 const videoRef = ref(null);
 const canvasRef = ref(null);
@@ -168,11 +164,6 @@ async function odaberiTip(tip) {
       obradaUToku = false;
     }, 3000);
   }
-}
-
-function handleOdjava() {
-  auth.odjava();
-  router.push('/prijava');
 }
 
 onMounted(async () => {
