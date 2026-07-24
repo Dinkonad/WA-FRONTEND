@@ -167,6 +167,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
+import ZaglavljeMeni from '../components/ZaglavljeMeni.vue';
 
 const router = useRouter();
 const auth = useAuthStore();

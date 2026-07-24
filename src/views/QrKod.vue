@@ -266,8 +266,8 @@ onMounted(() => {
   font-size: 1.7rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; margin: 0;
 }
 
-.glavni { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.sadrzaj { padding: 1.5rem 2rem 2rem; width: 100%; display: flex; justify-content: center; }
+.glavni { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.sadrzaj { flex: 1; padding: 1.5rem 2rem 2rem; width: 100%; display: flex; align-items: center; justify-content: center; }
 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; display: none; }
 
