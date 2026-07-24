@@ -44,6 +44,17 @@
       </div>
 
       <p class="uputa">Usmjeri kameru prema QR kodu člana.</p>
+
+      <div class="teretana-kartica">
+        <div class="teretana-naslov">TRENUTNO U TERETANI ({{ trenutnoUTeretani.length }})</div>
+        <div v-if="trenutnoUTeretani.length === 0" class="teretana-prazno">Trenutno nema nikoga u teretani.</div>
+        <div v-else class="teretana-lista">
+          <div v-for="t in trenutnoUTeretani" :key="t.korisnikId" class="teretana-red">
+            <span>{{ t.ime }}</span>
+            <span class="teretana-vrijeme">od {{ formatirajVrijemeUlaska(t.vrijemeUlaska) }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -64,6 +75,7 @@ const rezultat = ref(null);
 const greskaKamere = ref('');
 const pitanjeTip = ref(false);
 const provjeravam = ref(false);
+const trenutnoUTeretani = ref([]);
 
 let stream = null;
 let animacijaId = null;
@@ -73,6 +85,19 @@ let ocitaniToken = null;
 
 function formatirajDatum(datum) {
   return new Date(datum).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatirajVrijemeUlaska(datum) {
+  return new Date(datum).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function ucitajTrenutnoUTeretani() {
+  try {
+    const { data } = await api.get('/clanarina/trenutno-u-teretani');
+    trenutnoUTeretani.value = data.lista || [];
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function pokreniKameru() {
@@ -131,6 +156,7 @@ async function odaberiTip(tip) {
   try {
     const { data } = await api.post('/clanarina/qr/provjeri', { token: tekst, tip });
     rezultat.value = data;
+    if (data.validno) ucitajTrenutnoUTeretani();
   } catch (err) {
     console.error(err);
     rezultat.value = { validno: false, poruka: 'Greška pri provjeri.' };
@@ -150,6 +176,7 @@ function handleOdjava() {
 }
 
 onMounted(async () => {
+  ucitajTrenutnoUTeretani();
   try {
     if (!window.jsQR) {
       await ucitajSkriptu('https://unpkg.com/jsqr@1.4.0/dist/jsQR.js');
@@ -382,4 +409,37 @@ onBeforeUnmount(() => {
   text-align: center;
   margin: 0;
 }
+
+.teretana-kartica {
+  width: 100%;
+  max-width: 480px;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+}
+
+.teretana-naslov {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #f5c800;
+  margin-bottom: 0.75rem;
+}
+
+.teretana-prazno { color: rgba(255,255,255,0.3); font-size: 0.85rem; text-align: center; padding: 0.5rem 0; }
+
+.teretana-lista { max-height: 220px; overflow-y: auto; }
+
+.teretana-red {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.88rem;
+}
+.teretana-red:last-child { border-bottom: none; }
+.teretana-vrijeme { color: rgba(255,255,255,0.4); font-size: 0.78rem; }
 </style>

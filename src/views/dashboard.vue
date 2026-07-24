@@ -32,14 +32,6 @@
           <span>ČLANARINA</span>
         </button>
       </nav>
-      <div class="sidebar-korisnik">
-        <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="korisnik-avatar" />
-        <div v-else class="korisnik-inicijali">{{ inicijali }}</div>
-        <div class="korisnik-info">
-          <span class="korisnik-ime">{{ auth.korisnik?.ime }}</span>
-          <button class="gumb-odjava" @click="handleOdjava">Odjava</button>
-        </div>
-      </div>
     </aside>
 
     <div v-if="mobilniMeni" class="overlay" @click="mobilniMeni = false"></div>
@@ -50,13 +42,7 @@
           <span></span><span></span><span></span>
         </button>
         <h1 class="header-naslov">Statistike</h1>
-        <button class="ikona-gumb" @click="handleOdjava" title="Odjava">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-        </button>
+        <ZaglavljeMeni />
       </header>
 
       <div class="period-filter">
@@ -402,6 +388,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
 import { tipIkona, formatirajDatum, formatirajDatumPuni, formatirajVrijeme, dekodirajPolyline, ucitajSkriptu } from '../utils/aktivnosti.js';
+import ZaglavljeMeni from '../components/ZaglavljeMeni.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -434,11 +421,6 @@ const tipNazivi = {
   Run: 'Trčanje', Ride: 'Bicikl', Walk: 'Hodanje',
   Hike: 'Planinarenje', Swim: 'Plivanje', Workout: 'Trening',
 };
-
-const inicijali = computed(() => {
-  const ime = auth.korisnik?.ime || '';
-  return ime.split(' ').map(r => r[0]).join('').toUpperCase().slice(0, 2);
-});
 
 const periodFiltrirane = computed(() => {
   const sad = new Date();
@@ -931,11 +913,6 @@ async function sinkroniziraj() {
 function spojiStravu() {
   const token = localStorage.getItem('token') || '';
   window.location.href = `${import.meta.env.VITE_API_URL}/strava/connect?token=${token}`;
-}
-
-function handleOdjava() {
-  auth.odjava();
-  router.push('/prijava');
 }
 
 </script>

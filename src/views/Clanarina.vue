@@ -32,14 +32,6 @@
           <span>ČLANARINA</span>
         </button>
       </nav>
-      <div class="sidebar-korisnik">
-        <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="korisnik-avatar" />
-        <div v-else class="korisnik-inicijali">{{ inicijali }}</div>
-        <div class="korisnik-info">
-          <span class="korisnik-ime">{{ auth.korisnik?.ime }}</span>
-          <button class="gumb-odjava" @click="handleOdjava">Odjava</button>
-        </div>
-      </div>
     </aside>
 
     <div v-if="mobilniMeni" class="overlay" @click="mobilniMeni = false"></div>
@@ -50,7 +42,7 @@
           <span></span><span></span><span></span>
         </button>
         <h1 class="header-naslov">Članarina</h1>
-        <div></div>
+        <ZaglavljeMeni />
       </header>
 
       <div class="sadrzaj">
@@ -197,10 +189,6 @@ const zapoceoNoviZahtjev = ref(false);
 
 const forma = ref({ imePrezime: '', godiste: null, spol: '', broj: '' });
 
-const inicijali = computed(() => {
-  const ime = auth.korisnik?.ime || '';
-  return ime.split(' ').map(r => r[0]).join('').toUpperCase().slice(0, 2);
-});
 
 const barkodUzorak = computed(() => {
   const seme = (odabraniPlan.value || 'x').length + period.value.length;

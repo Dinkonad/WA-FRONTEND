@@ -32,14 +32,6 @@
           <span>ČLANARINA</span>
         </button>
       </nav>
-      <div class="sidebar-korisnik">
-        <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="korisnik-avatar" />
-        <div v-else class="korisnik-inicijali">{{ inicijali }}</div>
-        <div class="korisnik-info">
-          <span class="korisnik-ime">{{ auth.korisnik?.ime }}</span>
-          <button class="gumb-odjava" @click="handleOdjava">Odjava</button>
-        </div>
-      </div>
     </aside>
 
     <div v-if="mobilniMeni" class="overlay" @click="mobilniMeni = false"></div>
@@ -50,7 +42,7 @@
           <span></span><span></span><span></span>
         </button>
         <h1 class="header-naslov">Izazovi</h1>
-        <div></div>
+        <ZaglavljeMeni />
       </header>
 
       <div class="sadrzaj">
@@ -224,6 +216,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
 import { formatirajDatum } from '../utils/aktivnosti.js';
+import ZaglavljeMeni from '../components/ZaglavljeMeni.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -257,8 +250,6 @@ const korak = ref('lista');
 const pretragaLjestvice = ref('');
 const odabraniSudionik = ref(null);
 const ucitavaSudionika = ref(false);
-
-const inicijali = computed(() => inicijaliIme(auth.korisnik?.ime));
 
 const filtriranaLjestvica = computed(() => {
   const lista = (odabraniIzazov.value?.ljestvica || []).map((r, idx) => ({ ...r, mjesto: idx + 1 }));
@@ -349,11 +340,6 @@ async function osvjeziLjestvicu() {
 
 function formatirajVrijemeAzuriranja(datum) {
   return new Date(datum).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
-
-function handleOdjava() {
-  auth.odjava();
-  router.push('/prijava');
 }
 
 async function ucitajBrojUTeretani() {

@@ -23,11 +23,11 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
           <span>IZAZOVI</span>
         </button>
-        <button class="nav-item active">
+        <button class="nav-item" @click="router.push('/qr-kod')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
           <span>QR KOD</span>
         </button>
-        <button class="nav-item" @click="router.push('/clanarina')">
+        <button class="nav-item active" @click="router.push('/clanarina')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
         </button>
@@ -41,25 +41,29 @@
         <button class="hamburger" @click="mobilniMeni = !mobilniMeni">
           <span></span><span></span><span></span>
         </button>
-        <h1 class="header-naslov">QR kod</h1>
+        <h1 class="header-naslov">Povijest članarina</h1>
         <ZaglavljeMeni />
       </header>
 
       <div class="sadrzaj">
-        <div class="stupac">
-          <div class="qr-kartica">
-            <div v-if="ucitavanje" class="ucitavanje"><div class="spinner"></div></div>
+        <div v-if="ucitavanje" class="ucitavanje"><div class="spinner"></div></div>
 
-            <template v-else-if="!token">
-              <p class="qr-napomena">QR kod će biti vidljiv tek kada prođe uplata</p>
-            </template>
+        <div v-else class="lista-kartica">
+          <div v-if="zahtjevi.length === 0" class="prazno">Još nema zahtjeva za članarinu.</div>
 
-            <template v-else>
-              <p class="qr-vazi">Vrijedi do {{ formatirajDatum(vrijediDo) }}</p>
-              <div class="qr-slika-wrap">
-                <div ref="qrContainerRef" class="qr-slika"></div>
+          <div v-for="z in zahtjevi" :key="z._id" class="red-zahtjeva">
+            <div class="zahtjev-info">
+              <div class="zahtjev-glavno">
+                <span class="zahtjev-plan">{{ z.plan.toUpperCase() }} · {{ z.period === 'godisnje' ? 'godišnje' : 'mjesečno' }}</span>
+                <span class="zahtjev-cijena">{{ z.cijena }} €</span>
               </div>
-            </template>
+              <div class="zahtjev-detalji">
+                <span>Poslano: {{ formatirajDatum(z.createdAt) }}</span>
+                <span v-if="z.datumObrade">Obrađeno: {{ formatirajDatum(z.datumObrade) }}</span>
+              </div>
+              <p v-if="z.status === 'odbijeno' && z.napomenaOdbijanja" class="zahtjev-napomena">Razlog: {{ z.napomenaOdbijanja }}</p>
+            </div>
+            <span class="oznaka-statusa" :class="`status-${z.status}`">{{ nazivStatusa(z.status) }}</span>
           </div>
         </div>
       </div>
@@ -68,51 +72,40 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/authStore.js';
-import api from '../services/api.js';
-import { ucitajSkriptu } from '../utils/aktivnosti.js';
 import ZaglavljeMeni from '../components/ZaglavljeMeni.vue';
+import api from '../services/api.js';
 
 const router = useRouter();
-const auth = useAuthStore();
 
 const mobilniMeni = ref(false);
 const ucitavanje = ref(false);
-const token = ref(null);
-const vrijediDo = ref(null);
-const qrContainerRef = ref(null);
+const zahtjevi = ref([]);
 const brojUTeretani = ref(null);
 
 function formatirajDatum(datum) {
-  return new Date(datum).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const d = new Date(datum);
+  const dan = String(d.getDate()).padStart(2, '0');
+  const mjesec = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dan}/${mjesec}/${d.getFullYear()}`;
 }
 
-async function ucitajQrKod() {
+function nazivStatusa(status) {
+  if (status === 'odobreno') return 'Plaćeno';
+  if (status === 'odbijeno') return 'Odbijeno';
+  return 'Na čekanju';
+}
+
+async function ucitajPovijest() {
   ucitavanje.value = true;
   try {
-    const { data } = await api.get('/clanarina/qr');
-    token.value = data.token;
-    vrijediDo.value = data.vrijediDo;
+    const { data } = await api.get('/clanarina/moja-povijest');
+    zahtjevi.value = data.zahtjevi || [];
   } catch (err) {
     console.error(err);
   } finally {
     ucitavanje.value = false;
-  }
-
-  if (!token.value) return;
-
-  await nextTick();
-  try {
-    if (!window.QRCode) {
-      await ucitajSkriptu('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
-    }
-    qrContainerRef.value.innerHTML = '';
-    const velicina = window.innerWidth < 400 ? 200 : 240;
-    new window.QRCode(qrContainerRef.value, { text: token.value, width: velicina, height: velicina });
-  } catch (err) {
-    console.error(err);
   }
 }
 
@@ -125,9 +118,8 @@ async function ucitajBrojUTeretani() {
   }
 }
 
-
 onMounted(() => {
-  ucitajQrKod();
+  ucitajPovijest();
   ucitajBrojUTeretani();
 });
 </script>
@@ -232,27 +224,6 @@ onMounted(() => {
 
 .nav-item.active, .nav-item:hover { background: rgba(0,0,0,0.1); }
 
-.sidebar-korisnik {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 1.1rem 1.35rem;
-  border-top: 1px solid rgba(0,0,0,0.1);
-}
-
-.korisnik-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0; }
-.korisnik-inicijali {
-  width: 42px; height: 42px; border-radius: 50%;
-  background: #1a1a1a; color: #f5c800;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1rem; flex-shrink: 0;
-}
-
-.korisnik-info { display: flex; flex-direction: column; gap: 0.2rem; overflow: hidden; }
-.korisnik-ime { color: #1a1a1a; font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gumb-odjava { background: none; border: none; color: rgba(0,0,0,0.5); font-size: 0.8rem; cursor: pointer; padding: 0; font-family: 'Barlow', sans-serif; }
-.gumb-odjava:hover { color: #1a1a1a; }
-
 .header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.5rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -266,12 +237,12 @@ onMounted(() => {
   font-size: 1.7rem; font-weight: 800; color: #fff; letter-spacing: 0.05em; margin: 0;
 }
 
-.glavni { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.sadrzaj { padding: 1.5rem 2rem 2rem; width: 100%; display: flex; justify-content: center; }
+.glavni { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.sadrzaj { padding: 1.5rem 2rem 2rem; max-width: 800px; width: 100%; margin: 0 auto; }
 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; display: none; }
 
-.ucitavanje { display: flex; justify-content: center; padding: 3rem; }
+.ucitavanje { display: flex; justify-content: center; padding: 4rem; }
 .spinner {
   width: 36px; height: 36px;
   border: 3px solid rgba(245,200,0,0.2);
@@ -281,54 +252,57 @@ onMounted(() => {
 }
 @keyframes rotacija { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-.stupac {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-  width: 100%;
-  max-width: 420px;
-}
-
-.qr-kartica {
+.lista-kartica {
   background: #252525;
-  border: 1px solid rgba(245,200,0,0.3);
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
-  width: 100%;
-  text-align: center;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 0.5rem 1.5rem;
 }
 
+.prazno { padding: 2.5rem; text-align: center; color: rgba(255,255,255,0.25); font-size: 0.95rem; }
 
-.qr-napomena {
-  color: rgba(255,255,255,0.5);
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
-  margin: 0;
+.red-zahtjeva {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
+.red-zahtjeva:last-of-type { border-bottom: none; }
 
-.qr-vazi {
+.zahtjev-info { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+.zahtjev-glavno { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+.zahtjev-plan {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #f5c800;
+}
+.zahtjev-cijena { font-size: 0.95rem; font-weight: 700; }
+
+.zahtjev-detalji {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.8rem;
   color: rgba(255,255,255,0.4);
-  font-size: 0.85rem;
-  margin: 0 0 1.5rem;
 }
 
-.qr-slika-wrap {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.25rem;
-  display: inline-block;
-  max-width: 100%;
-}
+.zahtjev-napomena { font-size: 0.82rem; color: #fca5a5; margin: 0; }
 
-.qr-slika { display: block; max-width: 100%; }
-.qr-slika :deep(canvas),
-.qr-slika :deep(img) {
-  max-width: 100%;
-  height: auto !important;
-  width: auto !important;
-  display: block;
+.oznaka-statusa {
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
+.status-odobreno { background: rgba(74,222,128,0.15); color: #4ade80; }
+.status-odbijeno { background: rgba(239,68,68,0.12); color: #fca5a5; }
+.status-na_cekanju { background: rgba(245,200,0,0.15); color: #f5c800; }
 
 @media (max-width: 768px) {
   .sidebar {
@@ -340,11 +314,7 @@ onMounted(() => {
   .overlay { display: block; }
   .hamburger { display: flex; }
   .header { padding: 1.1rem 1.25rem; }
-}
-
-@media (max-width: 480px) {
   .sadrzaj { padding: 1rem; }
-  .qr-kartica { padding: 1.75rem 1.25rem; }
-  .qr-slika-wrap { padding: 0.85rem; }
+  .red-zahtjeva { flex-direction: column; }
 }
 </style>

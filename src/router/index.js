@@ -44,6 +44,30 @@ const routes = [
     meta: { zastiteno: true },
   },
   {
+    path: '/profil',
+    name: 'Profil',
+    component: () => import('../views/Profil.vue'),
+    meta: { zastiteno: true },
+  },
+  {
+    path: '/povijest-clanarina',
+    name: 'PovijestClanarina',
+    component: () => import('../views/PovijestClanarina.vue'),
+    meta: { zastiteno: true },
+  },
+  {
+    path: '/moji-rekordi',
+    name: 'MojiRekordi',
+    component: () => import('../views/MojiRekordi.vue'),
+    meta: { zastiteno: true },
+  },
+  {
+    path: '/feedback',
+    name: 'Feedback',
+    component: () => import('../views/Feedback.vue'),
+    meta: { zastiteno: true },
+  },
+  {
     path: '/recepcija',
     name: 'Recepcija',
     component: () => import('../views/Recepcija.vue'),

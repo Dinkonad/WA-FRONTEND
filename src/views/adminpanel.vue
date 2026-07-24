@@ -6,7 +6,11 @@
         <img src="../assets/logo.png" alt="logo" class="logo-img" />
       </div>
       <nav class="sidebar-nav">
-        <button class="nav-item active">
+        <button class="nav-item" :class="{ active: prikaz === 'dashboard' }" @click="odaberiPrikaz('dashboard')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>DASHBOARD</span>
+        </button>
+        <button class="nav-item" :class="{ active: prikaz === 'izazovi' }" @click="odaberiPrikaz('izazovi')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
           <span>IZAZOVI</span>
         </button>
@@ -27,11 +31,58 @@
         <button class="hamburger" @click="mobilniMeni = !mobilniMeni">
           <span></span><span></span><span></span>
         </button>
-        <h1 class="header-naslov">Izazovi</h1>
+        <h1 class="header-naslov">{{ prikaz === 'dashboard' ? 'Dashboard' : 'Izazovi' }}</h1>
         <div></div>
       </header>
 
-      <div v-if="korak === 'lista'" class="sadrzaj">
+      <div v-if="prikaz === 'dashboard'" class="sadrzaj">
+        <div class="sekcija-naslov">TRENUTNO U TERETANI ({{ trenutnoUTeretani.length }})</div>
+        <div v-if="ucitavanjeTeretana" class="ucitavanje"><div class="spinner"></div></div>
+        <div v-else class="lista-kartica lista-kartica-margin">
+          <div v-if="trenutnoUTeretani.length === 0" class="prazno">Trenutno nema nikoga u teretani.</div>
+          <div v-for="t in trenutnoUTeretani" :key="t.korisnikId" class="red-teretana">
+            <span>{{ t.ime }}</span>
+            <span class="red-teretana-vrijeme">od {{ formatirajVrijemeUlaska(t.vrijemeUlaska) }}</span>
+          </div>
+        </div>
+
+        <div class="sekcija-naslov">FEEDBACK</div>
+        <div v-if="ucitavanjeFeedback" class="ucitavanje"><div class="spinner"></div></div>
+        <div v-else class="lista-kartica lista-kartica-margin">
+          <div v-if="feedback.length === 0" class="prazno">Nema poslanog feedbacka.</div>
+          <div v-for="f in feedback" :key="f._id" class="red-feedback" :class="{ 'red-feedback-neprocitano': !f.procitano }">
+            <div class="feedback-info">
+              <div class="feedback-glavno">
+                <span class="feedback-ime">{{ f.korisnikId?.ime || 'Nepoznat korisnik' }}</span>
+                <span class="feedback-datum">{{ formatirajDatum(f.createdAt) }}</span>
+              </div>
+              <p class="feedback-tekst">{{ f.tekst }}</p>
+            </div>
+            <div class="feedback-akcije">
+              <button v-if="!f.procitano" class="gumb-oznaci" @click="oznaciProcitano(f)">Označi pročitano</button>
+              <button class="gumb-obrisi" @click="obrisiFeedback(f)" title="Obriši">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sekcija-naslov">OBAVIJESTI</div>
+        <div class="forma-obavijest">
+          <input v-model="novaObavijest" placeholder="Napiši novu obavijest..." @keyup.enter="dodajObavijest" />
+          <button class="gumb-dodaj-obavijest" :disabled="!novaObavijest.trim() || spremanjeObavijesti" @click="dodajObavijest">Objavi</button>
+        </div>
+        <div class="lista-kartica">
+          <div v-if="obavijesti.length === 0" class="prazno">Nema obavijesti.</div>
+          <div v-for="o in obavijesti" :key="o._id" class="red-obavijest">
+            <div class="obavijest-info">
+              <p>{{ o.tekst }}</p>
+              <span>{{ formatirajDatum(o.createdAt) }}</span>
+            </div>
+            <button class="gumb-obrisi" @click="obrisiObavijestAdmin(o)" title="Obriši">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="prikaz === 'izazovi' && korak === 'lista'" class="sadrzaj">
         <div class="tabovi">
           <button class="tab" :class="{ 'tab-aktivan': tab === 'aktivni' }" @click="tab = 'aktivni'">
             Pregled aktivnih izazova
@@ -65,7 +116,7 @@
         </div>
       </div>
 
-      <div v-if="korak === 'tip'" class="sadrzaj">
+      <div v-if="prikaz === 'izazovi' && korak === 'tip'" class="sadrzaj">
         <button class="gumb-nazad" @click="korak = 'lista'">‹ Nazad</button>
         <div class="tip-grid">
           <button class="tip-kartica" @click="odaberiVrstu('solo')">
@@ -79,7 +130,7 @@
         </div>
       </div>
 
-      <div v-if="korak === 'forma'" class="sadrzaj">
+      <div v-if="prikaz === 'izazovi' && korak === 'forma'" class="sadrzaj">
         <button class="gumb-nazad" @click="korak = uredjujeSeId ? 'lista' : 'tip'">‹ Nazad</button>
 
         <div class="forma-kartica">
@@ -242,11 +293,106 @@ function opisPravila(pravilo) {
 }
 
 const mobilniMeni = ref(false);
+const prikaz = ref('dashboard');
 const korak = ref('lista');
 const tab = ref('aktivni');
 const ucitavanje = ref(false);
 const spremanje = ref(false);
 const greska = ref('');
+
+const trenutnoUTeretani = ref([]);
+const ucitavanjeTeretana = ref(false);
+const feedback = ref([]);
+const ucitavanjeFeedback = ref(false);
+const obavijesti = ref([]);
+const novaObavijest = ref('');
+const spremanjeObavijesti = ref(false);
+const izazoviUcitani = ref(false);
+
+function odaberiPrikaz(novi) {
+  prikaz.value = novi;
+  if (novi === 'izazovi' && !izazoviUcitani.value) ucitajIzazove();
+}
+
+function formatirajVrijemeUlaska(datum) {
+  return new Date(datum).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function ucitajTrenutnoUTeretani() {
+  ucitavanjeTeretana.value = true;
+  try {
+    const { data } = await api.get('/clanarina/trenutno-u-teretani');
+    trenutnoUTeretani.value = data.lista || [];
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavanjeTeretana.value = false;
+  }
+}
+
+async function ucitajFeedback() {
+  ucitavanjeFeedback.value = true;
+  try {
+    const { data } = await api.get('/feedback');
+    feedback.value = data.feedback || [];
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavanjeFeedback.value = false;
+  }
+}
+
+async function oznaciProcitano(f) {
+  try {
+    await api.put(`/feedback/${f._id}/procitano`);
+    f.procitano = true;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function obrisiFeedback(f) {
+  if (!confirm('Obrisati ovaj feedback?')) return;
+  try {
+    await api.delete(`/feedback/${f._id}`);
+    feedback.value = feedback.value.filter(x => x._id !== f._id);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function ucitajObavijesti() {
+  try {
+    const { data } = await api.get('/obavijesti');
+    obavijesti.value = data.obavijesti || [];
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function dodajObavijest() {
+  if (!novaObavijest.value.trim()) return;
+  spremanjeObavijesti.value = true;
+  try {
+    await api.post('/obavijesti', { tekst: novaObavijest.value });
+    novaObavijest.value = '';
+    await ucitajObavijesti();
+  } catch (err) {
+    console.error(err);
+  } finally {
+    spremanjeObavijesti.value = false;
+  }
+}
+
+async function obrisiObavijestAdmin(o) {
+  if (!confirm('Obrisati ovu obavijest?')) return;
+  try {
+    await api.delete(`/obavijesti/${o._id}`);
+    obavijesti.value = obavijesti.value.filter(x => x._id !== o._id);
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 const aktivniIzazovi = ref([]);
 const prosliIzazovi = ref([]);
@@ -272,6 +418,7 @@ async function ucitajIzazove() {
     const { data } = await api.get('/izazovi');
     aktivniIzazovi.value = data.aktivni || [];
     prosliIzazovi.value = data.prosli || [];
+    izazoviUcitani.value = true;
   } catch (err) {
     console.error(err);
   } finally {
@@ -361,7 +508,9 @@ function handleOdjava() {
 }
 
 onMounted(() => {
-  ucitajIzazove();
+  ucitajTrenutnoUTeretani();
+  ucitajFeedback();
+  ucitajObavijesti();
 });
 </script>
 
@@ -524,6 +673,104 @@ onMounted(() => {
 }
 
 .prazno { padding: 2.5rem; text-align: center; color: rgba(255,255,255,0.25); font-size: 0.95rem; }
+
+.sekcija-naslov {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  margin: 0 0 1rem;
+}
+.sekcija-naslov:not(:first-child) { margin-top: 2.25rem; }
+
+.lista-kartica-margin { margin-bottom: 0.5rem; }
+
+.red-teretana {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.92rem;
+}
+.red-teretana:last-child { border-bottom: none; }
+.red-teretana-vrijeme { color: rgba(255,255,255,0.4); font-size: 0.82rem; }
+
+.red-feedback {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.red-feedback:last-child { border-bottom: none; }
+.red-feedback-neprocitano { border-left: 3px solid #f5c800; padding-left: 0.85rem; margin-left: -0.85rem; }
+
+.feedback-info { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.feedback-glavno { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+.feedback-ime { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.98rem; }
+.feedback-datum { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
+.feedback-tekst { font-size: 0.88rem; color: rgba(255,255,255,0.75); margin: 0; line-height: 1.4; }
+
+.feedback-akcije { display: flex; gap: 0.5rem; flex-shrink: 0; align-items: center; }
+
+.gumb-oznaci {
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.3);
+  color: #4ade80;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gumb-oznaci:hover { background: rgba(74,222,128,0.22); }
+
+.forma-obavijest {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.forma-obavijest input {
+  flex: 1;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  padding: 0.65rem 0.9rem;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.9rem;
+}
+.forma-obavijest input:focus { outline: none; border-color: #f5c800; }
+
+.gumb-dodaj-obavijest {
+  background: #f5c800;
+  border: none;
+  color: #1a1a1a;
+  padding: 0.65rem 1.3rem;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gumb-dodaj-obavijest:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.red-obavijest {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.red-obavijest:last-child { border-bottom: none; }
+.obavijest-info p { margin: 0 0 0.3rem; font-size: 0.9rem; }
+.obavijest-info span { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
 
 .red-izazova {
   display: flex;
