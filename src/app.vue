@@ -4,9 +4,11 @@
       <component :is="Component" />
     </transition>
   </router-view>
+  <PotvrdaModal />
 </template>
 
 <script setup>
+import PotvrdaModal from './components/PotvrdaModal.vue';
 </script>
 
 <style>

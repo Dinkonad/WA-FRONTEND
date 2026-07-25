@@ -31,6 +31,14 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
         </button>
+        <button class="nav-item" @click="router.push('/treninzi')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5M8 4l-4 4 12 12 4-4z"/><path d="M2 22l3-3M16 8l3-3"/></svg>
+          <span>TRENINZI</span>
+        </button>
+        <button class="nav-item" @click="router.push('/recepti')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
+          <span>RECEPTI AI</span>
+        </button>
       </nav>
     </aside>
 
@@ -104,7 +112,7 @@
               <p v-if="odabraniIzazov.opis" class="izazov-opis">{{ odabraniIzazov.opis }}</p>
 
               <div v-if="odabraniIzazov.nacin === 'dnevno'" class="napomena-dnevno">
-                ⚠ Mora se ispuniti barem jedno pravilo svaki dan — preskočen dan znači ispadanje iz izazova.
+                Mora se ispuniti barem jedno pravilo svaki dan — preskočen dan znači ispadanje iz izazova.
               </div>
 
               <div class="uvjeti-lista">
@@ -197,10 +205,21 @@
                   {{ d.prosao ? '✓' : '✕' }} {{ formatirajDatum(d.datum) }} — {{ d.prosao ? `${d.bodovi} bodova` : 'nije ispunjen nijedan uvjet' }}
                 </div>
                 <div v-if="d.aktivnosti.length === 0" class="prazno-malo">Nema aktivnosti taj dan.</div>
-                <div v-for="a in d.aktivnosti" :key="a.stravaId" class="sudionik-aktivnost-red">
-                  <span>{{ tipIkona(a.tip) }} {{ a.naziv }}</span>
-                  <span class="sudionik-aktivnost-vrijednost">{{ (a.udaljenost / 1000).toFixed(2) }} km · {{ Math.round(a.trajanje / 60) }} min</span>
-                </div>
+                <template v-else>
+                  <div v-for="(u, uidx) in d.uvjeti" :key="uidx" class="uvjet-detalj-blok uvjet-detalj-blok-dan">
+                    <div class="uvjet-detalj-naslov">
+                      {{ tipIkona(u.tip) }} {{ tipNaziv(u.tip) }} — {{ zaokruzi(u.napredak) }} / {{ u.cilj }} {{ jedinicaTeksta(u.mjera) }} → <b>{{ u.bodoviOstvareno }} bodova</b>
+                    </div>
+                    <div v-if="u.aktivnosti.length === 0" class="prazno-malo">Nema aktivnosti koje se broje.</div>
+                    <div v-for="a in u.aktivnosti" :key="a.stravaId" class="sudionik-aktivnost-red" :class="{ 'sudionik-aktivnost-bez-bodova': !a.bodoviOstvareno }">
+                      <span>{{ tipIkona(a.tip) }} {{ a.naziv }}</span>
+                      <span class="sudionik-aktivnost-vrijednost">
+                        {{ vrijednostAktivnosti(a, u.mjera) }}
+                        <template v-if="a.bodoviOstvareno != null"> · {{ a.bodoviOstvareno }} bod.</template>
+                      </span>
+                    </div>
+                  </div>
+                </template>
               </div>
             </div>
           </div>

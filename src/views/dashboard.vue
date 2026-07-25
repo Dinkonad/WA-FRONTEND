@@ -31,6 +31,14 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
         </button>
+        <button class="nav-item" @click="router.push('/treninzi')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5M8 4l-4 4 12 12 4-4z"/><path d="M2 22l3-3M16 8l3-3"/></svg>
+          <span>TRENINZI</span>
+        </button>
+        <button class="nav-item" @click="router.push('/recepti')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
+          <span>RECEPTI AI</span>
+        </button>
       </nav>
     </aside>
 
@@ -108,7 +116,7 @@
         <template v-if="aktivniPeriod === 'godisnje'">
           <div class="navigacija-period">
             <button class="nav-strelica" @click="godinaOffset--">‹</button>
-            <span class="nav-naziv">📅 {{ trenutnaGodina }}</span>
+            <span class="nav-naziv">{{ trenutnaGodina }}</span>
             <button class="nav-strelica" @click="godinaOffset++" :disabled="godinaOffset >= 0">›</button>
           </div>
 
@@ -341,7 +349,7 @@
         </div>
 
         <div v-if="odabranaAktivnost.uredjaj" class="modal-oprema">
-          <span>🖥 {{ odabranaAktivnost.uredjaj }}</span>
+          <span>{{ odabranaAktivnost.uredjaj }}</span>
         </div>
 
         <div v-if="odabranaAktivnost.polyline" class="modal-karta-wrap">
@@ -371,7 +379,7 @@
         <div v-if="odabranaAktivnost.rekordi?.length > 0" class="modal-rekordi">
           <div class="modal-tablica-naslov">REKORDI NA SEGMENTIMA</div>
           <div v-for="(r, i) in odabranaAktivnost.rekordi" :key="i" class="modal-rekord-red">
-            <span class="modal-rekord-badge">{{ r.rekord === 1 ? '🏆 PR' : `#${r.rekord}` }}</span>
+            <span class="modal-rekord-badge">{{ r.rekord === 1 ? 'PR' : `#${r.rekord}` }}</span>
             <span class="modal-rekord-naziv">{{ r.naziv }}</span>
             <span class="modal-rekord-vrijeme">{{ formatirajVrijeme(r.trajanje) }}</span>
           </div>

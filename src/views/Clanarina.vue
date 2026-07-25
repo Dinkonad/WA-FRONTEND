@@ -31,6 +31,14 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
         </button>
+        <button class="nav-item" @click="router.push('/treninzi')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5M8 4l-4 4 12 12 4-4z"/><path d="M2 22l3-3M16 8l3-3"/></svg>
+          <span>TRENINZI</span>
+        </button>
+        <button class="nav-item" @click="router.push('/recepti')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
+          <span>RECEPTI AI</span>
+        </button>
       </nav>
     </aside>
 
@@ -50,12 +58,14 @@
 
         <template v-else-if="mojZahtjev && mojZahtjev.status === 'na_cekanju'">
           <div class="status-kartica">
-            <div class="status-ikona">⏳</div>
             <h2 class="status-naslov">Zahtjev na čekanju</h2>
             <p class="status-tekst">
-              {{ planovi[mojZahtjev.plan]?.naziv }} plan · {{ mojZahtjev.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · {{ mojZahtjev.cijena }} €
+              {{ planovi[mojZahtjev.plan]?.naziv }} plan · {{ mojZahtjev.cijena }} €
             </p>
-            <p class="status-napomena">
+            <p v-if="mojZahtjev.nacinPlacanja === 'recepcija'" class="status-napomena">
+              Dođi na recepciju teretane platiti gotovinom ili karticom kako bi ti se aktivirala članarina.
+            </p>
+            <p v-else class="status-napomena">
               Vaša prijava je poslana knjigovodstvu na pregled, javit ćemo vam povratno kada prođe uplata.
             </p>
           </div>
@@ -63,10 +73,9 @@
 
         <template v-else-if="mojZahtjev && mojZahtjev.status === 'odobreno' && !istekla">
           <div class="status-kartica">
-            <div class="status-ikona">✅</div>
-            <h2 class="status-naslov">Članarina odobrena!</h2>
+            <h2 class="status-naslov">Članarina odobrena</h2>
             <p class="status-tekst">
-              {{ planovi[mojZahtjev.plan]?.naziv }} plan · {{ mojZahtjev.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · {{ mojZahtjev.cijena }} €
+              {{ planovi[mojZahtjev.plan]?.naziv }} plan · {{ mojZahtjev.cijena }} €
             </p>
             <p class="status-napomena">Članarina vrijedi do {{ formatirajDatum(vrijediDo) }}.</p>
           </div>
@@ -74,7 +83,6 @@
 
         <template v-else-if="mojZahtjev && mojZahtjev.status === 'odbijeno' && !zapoceoNoviZahtjev">
           <div class="status-kartica status-odbijeno">
-            <div class="status-ikona">❌</div>
             <h2 class="status-naslov">Zahtjev odbijen</h2>
             <p v-if="mojZahtjev.napomenaOdbijanja" class="status-tekst">{{ mojZahtjev.napomenaOdbijanja }}</p>
             <button class="gumb-zuti" @click="zapoceoNoviZahtjev = true">Pošalji novi zahtjev</button>
@@ -86,16 +94,13 @@
             Tvoja članarina je istekla {{ formatirajDatum(vrijediDo) }}. Odaberi novi plan za nastavak.
           </div>
 
-          <div class="period-izbor">
-            <button class="period-gumb" :class="{ 'period-aktivan': period === 'mjesecno' }" @click="period = 'mjesecno'">Monthly</button>
-            <button class="period-gumb" :class="{ 'period-aktivan': period === 'godisnje' }" @click="period = 'godisnje'">Yearly</button>
-          </div>
-
           <div class="planovi-grid">
-            <div v-for="(p, kljuc) in planovi" :key="kljuc" class="plan-kartica" :class="{ 'plan-istaknut': kljuc === 'basic' }">
+            <div v-for="(p, kljuc) in planovi" :key="kljuc" class="plan-kartica" :class="{ 'plan-istaknut': p.bestseller, 'plan-premium': p.premium }">
+              <div v-if="p.bestseller" class="plan-znacka">NAJPOPULARNIJE</div>
+              <div v-if="p.premium" class="plan-znacka plan-znacka-premium">PREMIUM</div>
               <div class="plan-naziv">{{ p.naziv.toUpperCase() }}</div>
               <div class="plan-cijena">
-                {{ period === 'godisnje' ? p.mjesecno * 12 : p.mjesecno }}€<span class="plan-period">/{{ period === 'godisnje' ? 'god' : 'mo' }}</span>
+                {{ p.cijena }}€<span class="plan-period">/{{ trajanjeKratko(p.trajanjeDana) }}</span>
               </div>
               <ul class="plan-znacajke">
                 <li v-for="(z, i) in p.znacajke" :key="i">{{ z }}</li>
@@ -130,12 +135,28 @@
               <input v-model="forma.broj" class="forma-input" placeholder="broj telefona" />
             </div>
             <div v-if="greska" class="poruka-greska">{{ greska }}</div>
-            <button class="gumb-zuti" @click="korak = 'placanje'">Nastavi</button>
+            <button class="gumb-zuti" @click="korak = 'nacin-placanja'">Nastavi</button>
+          </div>
+        </template>
+
+        <template v-else-if="korak === 'nacin-placanja'">
+          <button class="gumb-nazad" @click="korak = 'info'">‹ Nazad</button>
+          <div class="forma-kartica">
+            <h2 class="forma-naslov">Način plaćanja</h2>
+            <button class="nacin-kartica" :disabled="slanje" @click="odaberiNacinPlacanja('uplatnica')">
+              <div class="nacin-naslov">Uplata na račun</div>
+              <p class="nacin-opis">Uplati na IBAN teretane, knjigovodstvo ručno potvrđuje uplatu.</p>
+            </button>
+            <button class="nacin-kartica" :disabled="slanje" @click="odaberiNacinPlacanja('recepcija')">
+              <div class="nacin-naslov">Plati na recepciji</div>
+              <p class="nacin-opis">Dođi u teretanu i plati gotovinom ili karticom izravno na recepciji.</p>
+            </button>
+            <div v-if="greska" class="poruka-greska">{{ greska }}</div>
           </div>
         </template>
 
         <template v-else-if="korak === 'placanje'">
-          <button class="gumb-nazad" @click="korak = 'info'">‹ Nazad</button>
+          <button class="gumb-nazad" @click="korak = 'nacin-placanja'">‹ Nazad</button>
           <div class="placanje-kartica">
             <div class="barkod-wrap">
               <div class="barkod">
@@ -144,7 +165,7 @@
             </div>
             <div class="iban-info">
               <div><b>IBAN:</b> {{ GYM_IBAN }}</div>
-              <div><b>Iznos:</b> {{ odabraniPlan ? (period === 'godisnje' ? planovi[odabraniPlan].mjesecno * 12 : planovi[odabraniPlan].mjesecno) : 0 }} €</div>
+              <div><b>Iznos:</b> {{ odabraniPlan ? planovi[odabraniPlan].cijena : 0 }} €</div>
               <div><b>Poziv na broj:</b> {{ auth.korisnik?._id?.slice(-8) }}</div>
               <div><b>Opis plaćanja:</b> Članarina {{ planovi[odabraniPlan]?.naziv }} — {{ auth.korisnik?.ime }}</div>
             </div>
@@ -180,8 +201,8 @@ const ucitavanje = ref(false);
 const slanje = ref(false);
 const greska = ref('');
 const korak = ref('plan');
-const period = ref('mjesecno');
 const odabraniPlan = ref(null);
+const nacinPlacanjaOdabran = ref('uplatnica');
 const planovi = ref({});
 const mojZahtjev = ref(null);
 const vrijediDo = ref(null);
@@ -192,14 +213,30 @@ const forma = ref({ imePrezime: '', godiste: null, spol: '', broj: '' });
 
 
 const barkodUzorak = computed(() => {
-  const seme = (odabraniPlan.value || 'x').length + period.value.length;
+  const seme = (odabraniPlan.value || 'x').length;
   return Array.from({ length: 46 }, (_, i) => 1 + ((i * 7 + seme * 13) % 4));
 });
+
+function trajanjeKratko(dani) {
+  if (dani === 1) return 'dan';
+  if (dani === 7) return 'tjedan';
+  return 'mj.';
+}
 
 function odaberiPlan(kljuc) {
   odabraniPlan.value = kljuc;
   forma.value.imePrezime = auth.korisnik?.ime || '';
   korak.value = 'info';
+}
+
+async function odaberiNacinPlacanja(nacin) {
+  nacinPlacanjaOdabran.value = nacin;
+  greska.value = '';
+  if (nacin === 'uplatnica') {
+    korak.value = 'placanje';
+    return;
+  }
+  await posaljiZahtjev();
 }
 
 async function ucitajPlanove() {
@@ -238,7 +275,7 @@ async function posaljiZahtjev() {
   try {
     const { data } = await api.post('/clanarina', {
       plan: odabraniPlan.value,
-      period: period.value,
+      nacinPlacanja: nacinPlacanjaOdabran.value,
       ...forma.value,
     });
     mojZahtjev.value = data.zahtjev;
@@ -249,11 +286,6 @@ async function posaljiZahtjev() {
   } finally {
     slanje.value = false;
   }
-}
-
-function handleOdjava() {
-  auth.odjava();
-  router.push('/prijava');
 }
 
 async function ucitajBrojUTeretani() {
@@ -461,11 +493,12 @@ onMounted(async () => {
 
 .planovi-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 1.25rem;
 }
 
 .plan-kartica {
+  position: relative;
   background: #252525;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
@@ -475,10 +508,33 @@ onMounted(async () => {
   gap: 1rem;
 }
 
+.plan-znacka {
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: #f5c800;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.plan-znacka-premium { background: #4c1d95; color: #f5c800; }
+
 .plan-istaknut { background: #f5c800; }
 .plan-istaknut .plan-naziv,
 .plan-istaknut .plan-cijena,
 .plan-istaknut .plan-znacajke { color: #1a1a1a; }
+
+.plan-premium {
+  border: 2px solid #f5c800;
+  background: linear-gradient(160deg, #2a2410, #252525 60%);
+}
 
 .plan-naziv {
   font-family: 'Barlow Condensed', sans-serif;
@@ -576,6 +632,28 @@ onMounted(async () => {
 }
 .gumb-zuti:hover:not(:disabled) { background: #ffd700; }
 .gumb-zuti:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.nacin-kartica {
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.nacin-kartica:hover:not(:disabled) { border-color: #f5c800; background: rgba(245,200,0,0.06); }
+.nacin-kartica:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.nacin-naslov {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.nacin-opis { font-size: 0.82rem; color: rgba(255,255,255,0.5); margin: 0; line-height: 1.4; }
 
 .barkod-wrap { display: flex; justify-content: center; }
 .barkod {

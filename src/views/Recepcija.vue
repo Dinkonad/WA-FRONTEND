@@ -55,6 +55,30 @@
           </div>
         </div>
       </div>
+
+      <div class="teretana-kartica">
+        <div class="teretana-naslov">ZAHTJEVI ZA PLAĆANJE NA RECEPCIJI ({{ naRecepciji.length }})</div>
+        <div v-if="naRecepciji.length === 0" class="teretana-prazno">Trenutno nema zahtjeva za plaćanje.</div>
+        <div v-else class="placanje-lista">
+          <div v-for="z in naRecepciji" :key="z._id" class="placanje-red">
+            <div class="placanje-info">
+              <div class="placanje-glavno">
+                <span class="placanje-ime">{{ z.korisnikId?.ime || z.imePrezime }}</span>
+                <span class="placanje-plan">{{ z.plan.toUpperCase() }} · {{ z.cijena }} €</span>
+              </div>
+              <div class="placanje-detalji">
+                <span>Godište: {{ z.godiste }}</span>
+                <span>Spol: {{ z.spol }}</span>
+                <span>Broj: {{ z.broj }}</span>
+              </div>
+            </div>
+            <div class="placanje-akcije">
+              <button class="gumb-naplata gumb-gotovina" :disabled="obradujem === z._id" @click="oznaciPlaceno(z, 'gotovina')">Gotovina</button>
+              <button class="gumb-naplata gumb-kartica" :disabled="obradujem === z._id" @click="oznaciPlaceno(z, 'kartica')">Kartica</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -72,6 +96,8 @@ const greskaKamere = ref('');
 const pitanjeTip = ref(false);
 const provjeravam = ref(false);
 const trenutnoUTeretani = ref([]);
+const naRecepciji = ref([]);
+const obradujem = ref(null);
 
 let stream = null;
 let animacijaId = null;
@@ -93,6 +119,27 @@ async function ucitajTrenutnoUTeretani() {
     trenutnoUTeretani.value = data.lista || [];
   } catch (err) {
     console.error(err);
+  }
+}
+
+async function ucitajNaRecepciji() {
+  try {
+    const { data } = await api.get('/clanarina/na-recepciji');
+    naRecepciji.value = data.zahtjevi || [];
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function oznaciPlaceno(z, nacinNaplate) {
+  obradujem.value = z._id;
+  try {
+    await api.put(`/clanarina/${z._id}/oznaci-placeno`, { nacinNaplate });
+    naRecepciji.value = naRecepciji.value.filter(x => x._id !== z._id);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    obradujem.value = null;
   }
 }
 
@@ -168,6 +215,7 @@ async function odaberiTip(tip) {
 
 onMounted(async () => {
   ucitajTrenutnoUTeretani();
+  ucitajNaRecepciji();
   try {
     if (!window.jsQR) {
       await ucitajSkriptu('https://unpkg.com/jsqr@1.4.0/dist/jsQR.js');
@@ -433,4 +481,48 @@ onBeforeUnmount(() => {
 }
 .teretana-red:last-child { border-bottom: none; }
 .teretana-vrijeme { color: rgba(255,255,255,0.4); font-size: 0.78rem; }
+
+.placanje-lista { max-height: 320px; overflow-y: auto; }
+
+.placanje-red {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.placanje-red:last-child { border-bottom: none; }
+
+.placanje-info { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.placanje-glavno { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+.placanje-ime { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.95rem; }
+.placanje-plan { font-size: 0.8rem; color: #f5c800; font-weight: 700; }
+
+.placanje-detalji {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.placanje-akcije { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+.gumb-naplata {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.gumb-naplata:hover:not(:disabled) { opacity: 0.85; }
+.gumb-naplata:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.gumb-gotovina { background: rgba(74,222,128,0.15); color: #4ade80; }
+.gumb-kartica { background: rgba(96,165,250,0.15); color: #60a5fa; }
 </style>

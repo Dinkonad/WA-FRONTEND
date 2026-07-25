@@ -44,6 +44,18 @@ const routes = [
     meta: { zastiteno: true },
   },
   {
+    path: '/treninzi',
+    name: 'Treninzi',
+    component: () => import('../views/Treninzi.vue'),
+    meta: { zastiteno: true },
+  },
+  {
+    path: '/recepti',
+    name: 'Recepti',
+    component: () => import('../views/Recepti.vue'),
+    meta: { zastiteno: true },
+  },
+  {
     path: '/profil',
     name: 'Profil',
     component: () => import('../views/Profil.vue'),

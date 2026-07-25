@@ -27,7 +27,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
           <span>QR KOD</span>
         </button>
-        <button class="nav-item active" @click="router.push('/clanarina')">
+        <button class="nav-item" @click="router.push('/clanarina')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
           <span>ČLANARINA</span>
         </button>
@@ -35,7 +35,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5M8 4l-4 4 12 12 4-4z"/><path d="M2 22l3-3M16 8l3-3"/></svg>
           <span>TRENINZI</span>
         </button>
-        <button class="nav-item" @click="router.push('/recepti')">
+        <button class="nav-item active">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
           <span>RECEPTI AI</span>
         </button>
@@ -49,30 +49,23 @@
         <button class="hamburger" @click="mobilniMeni = !mobilniMeni">
           <span></span><span></span><span></span>
         </button>
-        <h1 class="header-naslov">Povijest članarina</h1>
+        <h1 class="header-naslov">Recepti AI</h1>
         <ZaglavljeMeni />
       </header>
 
       <div class="sadrzaj">
         <div v-if="ucitavanje" class="ucitavanje"><div class="spinner"></div></div>
 
-        <div v-else class="lista-kartica">
-          <div v-if="zahtjevi.length === 0" class="prazno">Još nema zahtjeva za članarinu.</div>
+        <div v-else-if="!jePremium" class="zakljucano-kartica">
+          <div class="zakljucano-ikona">🔒</div>
+          <h2 class="zakljucano-naslov">Premium sadržaj</h2>
+          <p class="zakljucano-tekst">Recepti i prehrana prilagođeni tebi dostupni su uz Premium članarinu.</p>
+          <button class="gumb-nadogradi" @click="router.push('/clanarina')">Nadogradi na Premium</button>
+        </div>
 
-          <div v-for="z in zahtjevi" :key="z._id" class="red-zahtjeva">
-            <div class="zahtjev-info">
-              <div class="zahtjev-glavno">
-                <span class="zahtjev-plan">{{ z.plan.toUpperCase() }}</span>
-                <span class="zahtjev-cijena">{{ z.cijena }} €</span>
-              </div>
-              <div class="zahtjev-detalji">
-                <span>Poslano: {{ formatirajDatum(z.createdAt) }}</span>
-                <span v-if="z.datumObrade">Obrađeno: {{ formatirajDatum(z.datumObrade) }}</span>
-              </div>
-              <p v-if="z.status === 'odbijeno' && z.napomenaOdbijanja" class="zahtjev-napomena">Razlog: {{ z.napomenaOdbijanja }}</p>
-            </div>
-            <span class="oznaka-statusa" :class="`status-${z.status}`">{{ nazivStatusa(z.status) }}</span>
-          </div>
+        <div v-else class="placeholder-kartica">
+          <h2 class="placeholder-naslov">Recepti uskoro dolaze</h2>
+          <p class="placeholder-tekst">Ovdje će se pojaviti recepti i savjeti o prehrani.</p>
         </div>
       </div>
     </main>
@@ -80,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import ZaglavljeMeni from '../components/ZaglavljeMeni.vue';
 import api from '../services/api.js';
@@ -89,27 +82,18 @@ const router = useRouter();
 
 const mobilniMeni = ref(false);
 const ucitavanje = ref(false);
-const zahtjevi = ref([]);
 const brojUTeretani = ref(null);
+const mojZahtjev = ref(null);
+const istekla = ref(false);
 
-function formatirajDatum(datum) {
-  const d = new Date(datum);
-  const dan = String(d.getDate()).padStart(2, '0');
-  const mjesec = String(d.getMonth() + 1).padStart(2, '0');
-  return `${dan}/${mjesec}/${d.getFullYear()}`;
-}
+const jePremium = computed(() => mojZahtjev.value?.status === 'odobreno' && mojZahtjev.value?.plan === 'premium' && !istekla.value);
 
-function nazivStatusa(status) {
-  if (status === 'odobreno') return 'Plaćeno';
-  if (status === 'odbijeno') return 'Odbijeno';
-  return 'Na čekanju';
-}
-
-async function ucitajPovijest() {
+async function ucitajMojZahtjev() {
   ucitavanje.value = true;
   try {
-    const { data } = await api.get('/clanarina/moja-povijest');
-    zahtjevi.value = data.zahtjevi || [];
+    const { data } = await api.get('/clanarina/moja');
+    mojZahtjev.value = data.zahtjev;
+    istekla.value = data.istekla;
   } catch (err) {
     console.error(err);
   } finally {
@@ -127,7 +111,7 @@ async function ucitajBrojUTeretani() {
 }
 
 onMounted(() => {
-  ucitajPovijest();
+  ucitajMojZahtjev();
   ucitajBrojUTeretani();
 });
 </script>
@@ -246,11 +230,11 @@ onMounted(() => {
 }
 
 .glavni { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-.sadrzaj { padding: 1.5rem 2rem 2rem; max-width: 800px; width: 100%; margin: 0 auto; }
+.sadrzaj { padding: 1.5rem 2rem 2rem; max-width: 700px; width: 100%; margin: 0 auto; display: flex; }
 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; display: none; }
 
-.ucitavanje { display: flex; justify-content: center; padding: 4rem; }
+.ucitavanje { display: flex; justify-content: center; padding: 4rem; width: 100%; }
 .spinner {
   width: 36px; height: 36px;
   border: 3px solid rgba(245,200,0,0.2);
@@ -260,57 +244,49 @@ onMounted(() => {
 }
 @keyframes rotacija { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-.lista-kartica {
+.zakljucano-kartica, .placeholder-kartica {
   background: #252525;
   border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 16px;
-  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  text-align: center;
+  width: 100%;
+  margin: 1rem auto 0;
 }
 
-.prazno { padding: 2.5rem; text-align: center; color: rgba(255,255,255,0.25); font-size: 0.95rem; }
+.zakljucano-kartica { border: 1px solid rgba(245,200,0,0.25); }
 
-.red-zahtjeva {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.red-zahtjeva:last-of-type { border-bottom: none; }
+.zakljucano-ikona, .placeholder-ikona { font-size: 3rem; margin-bottom: 1rem; }
 
-.zahtjev-info { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
-.zahtjev-glavno { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
-.zahtjev-plan {
+.zakljucano-naslov, .placeholder-naslov {
   font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.6rem;
   color: #f5c800;
 }
-.zahtjev-cijena { font-size: 0.95rem; font-weight: 700; }
 
-.zahtjev-detalji {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.4);
+.zakljucano-tekst, .placeholder-tekst {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.92rem;
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
 }
+.placeholder-tekst { margin-bottom: 0; }
 
-.zahtjev-napomena { font-size: 0.82rem; color: #fca5a5; margin: 0; }
-
-.oznaka-statusa {
-  padding: 0.35rem 0.85rem;
-  border-radius: 20px;
+.gumb-nadogradi {
+  background: #f5c800;
+  border: none;
+  color: #1a1a1a;
+  padding: 0.8rem 1.75rem;
+  border-radius: 10px;
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
-  flex-shrink: 0;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-.status-odobreno { background: rgba(74,222,128,0.15); color: #4ade80; }
-.status-odbijeno { background: rgba(239,68,68,0.12); color: #fca5a5; }
-.status-na_cekanju { background: rgba(245,200,0,0.15); color: #f5c800; }
+.gumb-nadogradi:hover { background: #ffd700; }
 
 @media (max-width: 768px) {
   .sidebar {
@@ -323,6 +299,5 @@ onMounted(() => {
   .hamburger { display: flex; }
   .header { padding: 1.1rem 1.25rem; }
   .sadrzaj { padding: 1rem; }
-  .red-zahtjeva { flex-direction: column; }
 }
 </style>

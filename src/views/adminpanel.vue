@@ -246,6 +246,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import api from '../services/api.js';
 import { formatirajDatum } from '../utils/aktivnosti.js';
 import OdjavaKrug from '../components/OdjavaKrug.vue';
+import { potvrdi } from '../composables/potvrda.js';
 
 const TIPOVI = [
   { tip: 'Run', naziv: 'Trčanje' },
@@ -341,7 +342,7 @@ async function oznaciProcitano(f) {
 }
 
 async function obrisiFeedback(f) {
-  if (!confirm('Obrisati ovaj feedback?')) return;
+  if (!(await potvrdi('Obrisati ovaj feedback?'))) return;
   try {
     await api.delete(`/feedback/${f._id}`);
     feedback.value = feedback.value.filter(x => x._id !== f._id);
@@ -374,7 +375,7 @@ async function dodajObavijest() {
 }
 
 async function obrisiObavijestAdmin(o) {
-  if (!confirm('Obrisati ovu obavijest?')) return;
+  if (!(await potvrdi('Obrisati ovu obavijest?'))) return;
   try {
     await api.delete(`/obavijesti/${o._id}`);
     obavijesti.value = obavijesti.value.filter(x => x._id !== o._id);
@@ -477,7 +478,7 @@ async function spremiIzazov() {
 }
 
 async function obrisiIzazov(izazov) {
-  if (!confirm(`Sigurno želiš obrisati izazov "${izazov.naziv}"? Ovo se ne može poništiti.`)) return;
+  if (!(await potvrdi(`Sigurno želiš obrisati izazov "${izazov.naziv}"? Ovo se ne može poništiti.`))) return;
   try {
     await api.delete(`/izazovi/${izazov._id}`);
     await ucitajIzazove();

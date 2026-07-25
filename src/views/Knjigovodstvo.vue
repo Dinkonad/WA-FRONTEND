@@ -225,7 +225,7 @@
             <div class="zahtjev-info">
               <div class="zahtjev-glavno">
                 <span class="zahtjev-ime">{{ z.korisnikId?.ime || z.imePrezime }}</span>
-                <span class="zahtjev-plan">{{ z.plan.toUpperCase() }} · {{ z.period === 'godisnje' ? 'godišnje' : 'mjesečno' }} · {{ z.cijena }} €</span>
+                <span class="zahtjev-plan">{{ z.plan.toUpperCase() }} · {{ z.cijena }} €</span>
               </div>
               <div class="zahtjev-detalji">
                 <span>{{ z.korisnikId?.email }}</span>
@@ -266,6 +266,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../services/api.js';
 import OdjavaKrug from '../components/OdjavaKrug.vue';
+import { potvrdi } from '../composables/potvrda.js';
 
 const mobilniMeni = ref(false);
 const prikaz = ref('statistika');
@@ -342,7 +343,7 @@ async function potvrdiOdbijanje(z) {
 }
 
 async function obrisi(z) {
-  if (!confirm(`Sigurno obrisati zahtjev za "${z.korisnikId?.ime || z.imePrezime}"? Ovo se ne može poništiti.`)) return;
+  if (!(await potvrdi(`Sigurno obrisati zahtjev za "${z.korisnikId?.ime || z.imePrezime}"? Ovo se ne može poništiti.`))) return;
   obradujem.value = z._id;
   try {
     await api.delete(`/clanarina/${z._id}`);
@@ -431,7 +432,7 @@ async function posaljiFinanciju(vrsta) {
 }
 
 async function obrisiFinanciju(f) {
-  if (!confirm(`Obrisati stavku "${f.ime}"?`)) return;
+  if (!(await potvrdi(`Obrisati stavku "${f.ime}"?`))) return;
   try {
     await api.delete(`/financije/${f._id}`);
     financije.value = financije.value.filter(x => x._id !== f._id);
