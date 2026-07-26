@@ -14,6 +14,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
           <span>IZAZOVI</span>
         </button>
+        <button class="nav-item" :class="{ active: prikaz === 'treninzi' }" @click="odaberiPrikaz('treninzi')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5M8 4l-4 4 12 12 4-4z"/><path d="M2 22l3-3M16 8l3-3"/></svg>
+          <span>TRENINZI</span>
+        </button>
       </nav>
     </aside>
 
@@ -24,7 +28,7 @@
         <button class="hamburger" @click="mobilniMeni = !mobilniMeni">
           <span></span><span></span><span></span>
         </button>
-        <h1 class="header-naslov">{{ prikaz === 'dashboard' ? 'Dashboard' : 'Izazovi' }}</h1>
+        <h1 class="header-naslov">{{ naslovi[prikaz] }}</h1>
         <OdjavaKrug />
       </header>
 
@@ -237,12 +241,228 @@
         </div>
       </div>
 
+      <div v-if="prikaz === 'treninzi'" class="podprikaz-tabovi">
+        <button class="podprikaz-tab" :class="{ 'podprikaz-tab-aktivan': vjPodprikaz === 'vjezbe' }" @click="vjPodprikaz = 'vjezbe'">VJEŽBE</button>
+        <button class="podprikaz-tab" :class="{ 'podprikaz-tab-aktivan': vjPodprikaz === 'treninzi' }" @click="odaberiPodprikazTreninzi">TRENINZI</button>
+      </div>
+
+      <div v-if="prikaz === 'treninzi' && vjPodprikaz === 'vjezbe' && vjKorak === 'lista'" class="sadrzaj">
+        <div class="tabovi">
+          <button v-for="k in vjKategorije" :key="k.kljuc" class="tab" :class="{ 'tab-aktivan': vjFiltarKategorija === k.kljuc }" @click="vjFiltarKategorija = k.kljuc">
+            {{ k.naziv }}
+          </button>
+        </div>
+        <div class="tabovi">
+          <button v-for="r in vjRazine" :key="r.kljuc" class="tab" :class="{ 'tab-aktivan': vjFiltarRazina === r.kljuc }" @click="vjFiltarRazina = r.kljuc">
+            {{ r.naziv }}
+          </button>
+        </div>
+
+        <div v-if="ucitavanjeVjezbi" class="ucitavanje"><div class="spinner"></div></div>
+
+        <div v-else class="lista-kartica">
+          <div v-if="vjezbe.length === 0" class="prazno">Nema vježbi u ovoj kategoriji i razini.</div>
+          <div v-for="v in vjezbe" :key="v._id" class="red-izazova">
+            <div class="red-info">
+              <span class="red-naziv">{{ v.naziv }}</span>
+              <span class="red-meta">
+                {{ nazivKategorije(v.kategorija) }} · {{ nazivRazine(v.razina) }}
+                <template v-if="v.serije">· {{ v.serije }} serije po {{ v.ponavljanja }} ponavljanja<template v-if="v.kilaza"> sa {{ formatirajKilazu(v.kilaza) }}</template></template>
+                <template v-if="v.pauza">· odmor {{ v.pauza }}s</template>
+              </span>
+            </div>
+            <div class="red-akcije">
+              <button class="gumb-uredi" @click="otvoriFormuVjezbe(v)">Uredi</button>
+              <button class="gumb-obrisi" @click="obrisiVjezbu(v)" title="Obriši">✕</button>
+            </div>
+          </div>
+
+          <button class="gumb-dodaj-novi" @click="otvoriFormuVjezbe()">DODAJ VJEŽBU</button>
+        </div>
+      </div>
+
+      <div v-if="prikaz === 'treninzi' && vjPodprikaz === 'vjezbe' && vjKorak === 'forma'" class="sadrzaj">
+        <button class="gumb-nazad" @click="vjKorak = 'lista'">‹ Nazad</button>
+        <div class="forma-kartica">
+          <div class="forma-red">
+            <label class="forma-label">Naziv vježbe</label>
+            <input v-model="vjForma.naziv" class="forma-input" placeholder="npr. Bench Press" />
+          </div>
+
+          <div class="forma-red forma-red-dvije">
+            <div>
+              <label class="forma-label">Kategorija</label>
+              <select v-model="vjForma.kategorija" class="forma-input">
+                <option value="">Odaberi</option>
+                <option v-for="k in vjKategorije" :key="k.kljuc" :value="k.kljuc">{{ k.naziv }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="forma-label">Razina</label>
+              <select v-model="vjForma.razina" class="forma-input">
+                <option value="">Odaberi</option>
+                <option v-for="r in vjRazine" :key="r.kljuc" :value="r.kljuc">{{ r.naziv }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Opis</label>
+            <textarea v-model="vjForma.opis" class="forma-textarea" placeholder="Što vježba radi i kako se izvodi (opcionalno)"></textarea>
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Video (link)</label>
+            <input v-model="vjForma.video" class="forma-input" placeholder="https://..." />
+          </div>
+
+          <div class="forma-red forma-red-dvije">
+            <div>
+              <label class="forma-label">Serije</label>
+              <input v-model.number="vjForma.serije" type="number" min="0" class="forma-input" placeholder="npr. 4" />
+            </div>
+            <div>
+              <label class="forma-label">Ponavljanja</label>
+              <input v-model="vjForma.ponavljanja" class="forma-input" placeholder="npr. 8-12" />
+            </div>
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Kilaža</label>
+            <input v-model="vjForma.kilaza" class="forma-input" placeholder="npr. 50-60kg ili tjelesna težina" />
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Pauza između serija (sekunde)</label>
+            <input v-model.number="vjForma.pauza" type="number" min="0" class="forma-input" placeholder="npr. 90" />
+          </div>
+
+          <div v-if="vjGreska" class="poruka-greska">{{ vjGreska }}</div>
+
+          <button class="gumb-spremi" @click="spremiVjezbu" :disabled="vjSpremanje">
+            {{ vjSpremanje ? 'Spremam...' : (vjUredjujeSeId ? 'SPREMI PROMJENE' : 'DODAJ VJEŽBU') }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="prikaz === 'treninzi' && vjPodprikaz === 'treninzi' && trKorak === 'lista'" class="sadrzaj">
+        <div v-if="ucitavanjeTreninga" class="ucitavanje"><div class="spinner"></div></div>
+        <div v-else class="lista-kartica">
+          <div v-if="treninzi.length === 0" class="prazno">Još nema treninga.</div>
+          <div v-for="t in treninzi" :key="t._id" class="red-izazova">
+            <div class="red-info">
+              <span class="red-naziv">{{ t.naziv }}</span>
+              <span class="red-meta">{{ t.brojVjezbi }} {{ t.brojVjezbi === 1 ? 'vježba' : 'vježbi' }}</span>
+            </div>
+            <div class="red-akcije">
+              <button class="gumb-uredi" @click="otvoriFormuTreninga(t)">Uredi</button>
+              <button class="gumb-obrisi" @click="obrisiTrening(t)" title="Obriši">✕</button>
+            </div>
+          </div>
+
+          <button class="gumb-dodaj-novi" @click="otvoriFormuTreninga()">NOVI TRENING</button>
+        </div>
+      </div>
+
+      <div v-if="prikaz === 'treninzi' && vjPodprikaz === 'treninzi' && trKorak === 'forma'" class="sadrzaj">
+        <button class="gumb-nazad" @click="trKorak = 'lista'">‹ Nazad</button>
+        <div class="forma-kartica">
+          <div class="forma-red">
+            <label class="forma-label">Naziv treninga</label>
+            <input v-model="trForma.naziv" class="forma-input" placeholder="npr. Trening za prsa i triceps" />
+          </div>
+          <div class="forma-red">
+            <label class="forma-label">Opis</label>
+            <textarea v-model="trForma.opis" class="forma-textarea" placeholder="Kratak opis treninga (opcionalno)"></textarea>
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Način izvođenja</label>
+            <div class="nacin-izbor">
+              <button type="button" class="nacin-gumb" :class="{ 'nacin-aktivan': trForma.nacinIzvodjenja === 'redom' }" @click="trForma.nacinIzvodjenja = 'redom'">
+                Redom — sve serije jedne pa sljedeća
+              </button>
+              <button type="button" class="nacin-gumb" :class="{ 'nacin-aktivan': trForma.nacinIzvodjenja === 'kruzno' }" @click="trForma.nacinIzvodjenja = 'kruzno'">
+                Kružno — naizmjenično po jedna serija
+              </button>
+            </div>
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Odabrane vježbe ({{ trForma.vjezbe.length }}) — povuci za redoslijed, postavi odmor prije sljedeće vježbe</label>
+            <div v-if="trForma.vjezbe.length === 0" class="prazno-manje-tekst">Još nisi dodao nijednu vježbu.</div>
+            <div v-else class="odabrane-vjezbe">
+              <div
+                v-for="(stavka, idx) in trForma.vjezbe"
+                :key="stavka.vjezbaId"
+                class="odabrana-vjezba-red"
+                :class="{ 'odabrana-vjezba-vuce-se': povuceniIndeks === idx }"
+                draggable="true"
+                @dragstart="pocniPovlacenje(idx)"
+                @dragover.prevent
+                @dragenter.prevent="pomakniPovlacenjem(idx)"
+                @dragend="zavrsiPovlacenje"
+              >
+                <span class="drzac-za-povlacenje" title="Povuci za promjenu redoslijeda">
+                  <svg width="14" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/>
+                    <circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/>
+                  </svg>
+                </span>
+                <span class="odabrana-vjezba-broj">{{ idx + 1 }}.</span>
+                <span class="odabrana-vjezba-naziv">{{ nazivVjezbe(stavka.vjezbaId) }}</span>
+                <div class="odabrana-vjezba-pauza">
+                  <span class="pauza-input-oznaka">odmor poslije:</span>
+                  <input v-model.number="stavka.pauza" type="number" min="0" placeholder="npr. 90" class="pauza-input-malo" />
+                  <span class="pauza-input-oznaka">s</span>
+                </div>
+                <button type="button" class="gumb-ukloni" @click="ukloniVjezbuIzTreninga(idx)">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Dodaj vježbu iz kategorije</label>
+            <div class="tabovi">
+              <button v-for="k in vjKategorije" :key="k.kljuc" class="tab" :class="{ 'tab-aktivan': trFiltarKategorija === k.kljuc }" @click="trFiltarKategorija = k.kljuc">
+                {{ k.naziv }}
+              </button>
+            </div>
+            <div class="tabovi">
+              <button v-for="r in vjRazine" :key="r.kljuc" class="tab" :class="{ 'tab-aktivan': trFiltarRazina === r.kljuc }" @click="trFiltarRazina = r.kljuc">
+                {{ r.naziv }}
+              </button>
+            </div>
+            <div v-if="vjezbeZaDodavanje.length === 0" class="prazno-manje-tekst">Nema vježbi u ovoj kategoriji i razini.</div>
+            <div v-else class="pool-vjezbe">
+              <div v-for="v in vjezbeZaDodavanje" :key="v._id" class="pool-vjezba-red">
+                <span class="pool-vjezba-info">
+                  <span class="pool-vjezba-naziv">{{ v.naziv }}</span>
+                  <span v-if="v.serije" class="pool-vjezba-detalji">
+                    {{ v.serije }} serije po {{ v.ponavljanja }} ponavljanja<template v-if="v.kilaza"> sa {{ formatirajKilazu(v.kilaza) }}</template><template v-if="v.pauza"> · odmor {{ v.pauza }}s</template>
+                  </span>
+                </span>
+                <button type="button" class="gumb-dodaj-malo" :disabled="jeVjezbaDodana(v._id)" @click="dodajVjezbuUTrening(v)">
+                  {{ jeVjezbaDodana(v._id) ? 'Dodano' : '+ Dodaj' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="trGreska" class="poruka-greska">{{ trGreska }}</div>
+
+          <button class="gumb-spremi" @click="spremiTrening" :disabled="trSpremanje">
+            {{ trSpremanje ? 'Spremam...' : (trUredjujeSeId ? 'SPREMI PROMJENE' : 'SPREMI TRENING') }}
+          </button>
+        </div>
+      </div>
+
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import api from '../services/api.js';
 import { formatirajDatum } from '../utils/aktivnosti.js';
 import OdjavaKrug from '../components/OdjavaKrug.vue';
@@ -299,9 +519,12 @@ const novaObavijest = ref('');
 const spremanjeObavijesti = ref(false);
 const izazoviUcitani = ref(false);
 
+const naslovi = { dashboard: 'Dashboard', izazovi: 'Izazovi', treninzi: 'Treninzi' };
+
 function odaberiPrikaz(novi) {
   prikaz.value = novi;
   if (novi === 'izazovi' && !izazoviUcitani.value) ucitajIzazove();
+  if (novi === 'treninzi' && !vjOpcijeUcitane.value) ucitajVjOpcijeIVjezbe();
 }
 
 function formatirajVrijemeUlaska(datum) {
@@ -487,6 +710,264 @@ async function obrisiIzazov(izazov) {
   }
 }
 
+// TRENINZI (vježbe)
+
+const vjKorak = ref('lista');
+const vjKategorije = ref([]);
+const vjRazine = ref([]);
+const vjOpcijeUcitane = ref(false);
+const vjFiltarKategorija = ref('');
+const vjFiltarRazina = ref('');
+const vjezbe = ref([]);
+const ucitavanjeVjezbi = ref(false);
+const vjUredjujeSeId = ref(null);
+const vjGreska = ref('');
+const vjSpremanje = ref(false);
+
+function praznaVjForma() {
+  return { naziv: '', kategorija: '', razina: '', opis: '', video: '', serije: null, ponavljanja: '', kilaza: '', pauza: null };
+}
+const vjForma = ref(praznaVjForma());
+
+function nazivKategorije(kljuc) {
+  return vjKategorije.value.find(k => k.kljuc === kljuc)?.naziv || kljuc;
+}
+
+function nazivRazine(kljuc) {
+  return vjRazine.value.find(r => r.kljuc === kljuc)?.naziv || kljuc;
+}
+
+function formatirajKilazu(kilaza) {
+  if (!kilaza) return '';
+  return /^[\d.,\-\s]+$/.test(kilaza) ? `${kilaza} kg` : kilaza;
+}
+
+async function ucitajVjOpcijeIVjezbe() {
+  try {
+    const { data } = await api.get('/vjezbe/opcije');
+    vjKategorije.value = data.kategorije || [];
+    vjRazine.value = data.razine || [];
+    vjFiltarKategorija.value = vjKategorije.value[0]?.kljuc || '';
+    vjFiltarRazina.value = vjRazine.value[0]?.kljuc || '';
+    vjOpcijeUcitane.value = true;
+  } catch (err) {
+    console.error(err);
+  }
+  await ucitajVjezbe();
+}
+
+async function ucitajVjezbe() {
+  ucitavanjeVjezbi.value = true;
+  try {
+    const { data } = await api.get(`/vjezbe?kategorija=${vjFiltarKategorija.value}&razina=${vjFiltarRazina.value}`);
+    vjezbe.value = data.vjezbe || [];
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavanjeVjezbi.value = false;
+  }
+}
+
+watch([vjFiltarKategorija, vjFiltarRazina], () => {
+  if (vjOpcijeUcitane.value) ucitajVjezbe();
+});
+
+function otvoriFormuVjezbe(v) {
+  vjGreska.value = '';
+  if (v) {
+    vjUredjujeSeId.value = v._id;
+    vjForma.value = {
+      naziv: v.naziv,
+      kategorija: v.kategorija,
+      razina: v.razina,
+      opis: v.opis || '',
+      video: v.video || '',
+      serije: v.serije || null,
+      ponavljanja: v.ponavljanja || '',
+      kilaza: v.kilaza || '',
+      pauza: v.pauza || null,
+    };
+  } else {
+    vjUredjujeSeId.value = null;
+    vjForma.value = praznaVjForma();
+    vjForma.value.kategorija = vjFiltarKategorija.value;
+    vjForma.value.razina = vjFiltarRazina.value;
+  }
+  vjKorak.value = 'forma';
+}
+
+async function spremiVjezbu() {
+  vjGreska.value = '';
+  if (!vjForma.value.naziv.trim()) return (vjGreska.value = 'Naziv je obavezan.');
+  if (!vjForma.value.kategorija) return (vjGreska.value = 'Odaberi kategoriju.');
+  if (!vjForma.value.razina) return (vjGreska.value = 'Odaberi razinu.');
+
+  vjSpremanje.value = true;
+  try {
+    if (vjUredjujeSeId.value) {
+      await api.put(`/vjezbe/${vjUredjujeSeId.value}`, vjForma.value);
+    } else {
+      await api.post('/vjezbe', vjForma.value);
+    }
+    vjKorak.value = 'lista';
+    await ucitajVjezbe();
+  } catch (err) {
+    vjGreska.value = err.response?.data?.poruka || 'Greška pri spremanju vježbe.';
+  } finally {
+    vjSpremanje.value = false;
+  }
+}
+
+async function obrisiVjezbu(v) {
+  if (!(await potvrdi(`Sigurno obrisati vježbu "${v.naziv}"?`))) return;
+  try {
+    await api.delete(`/vjezbe/${v._id}`);
+    await ucitajVjezbe();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// TRENINZI (gotovi treninzi sastavljeni od vježbi)
+
+const vjPodprikaz = ref('vjezbe');
+const trKorak = ref('lista');
+const treninzi = ref([]);
+const ucitavanjeTreninga = ref(false);
+const sveVjezbe = ref([]);
+const trFiltarKategorija = ref('');
+const trFiltarRazina = ref('');
+const trUredjujeSeId = ref(null);
+const trGreska = ref('');
+const trSpremanje = ref(false);
+
+function praznaTrForma() {
+  return { naziv: '', opis: '', vjezbe: [], nacinIzvodjenja: 'redom' };
+}
+const trForma = ref(praznaTrForma());
+
+const vjezbeZaDodavanje = computed(() =>
+  sveVjezbe.value.filter(v => v.kategorija === trFiltarKategorija.value && v.razina === trFiltarRazina.value)
+);
+
+function nazivVjezbe(id) {
+  return sveVjezbe.value.find(v => v._id === id)?.naziv || '…';
+}
+
+async function odaberiPodprikazTreninzi() {
+  vjPodprikaz.value = 'treninzi';
+  if (!vjOpcijeUcitane.value) await ucitajVjOpcijeIVjezbe();
+  trFiltarKategorija.value = vjKategorije.value[0]?.kljuc || '';
+  trFiltarRazina.value = vjRazine.value[0]?.kljuc || '';
+  await ucitajSveVjezbe();
+  await ucitajTreninge();
+}
+
+async function ucitajSveVjezbe() {
+  try {
+    const { data } = await api.get('/vjezbe');
+    sveVjezbe.value = data.vjezbe || [];
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function ucitajTreninge() {
+  ucitavanjeTreninga.value = true;
+  try {
+    const { data } = await api.get('/treninzi');
+    treninzi.value = data.treninzi || [];
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavanjeTreninga.value = false;
+  }
+}
+
+function jeVjezbaDodana(id) {
+  return trForma.value.vjezbe.some(s => s.vjezbaId === id);
+}
+
+function dodajVjezbuUTrening(v) {
+  if (!jeVjezbaDodana(v._id)) trForma.value.vjezbe.push({ vjezbaId: v._id, pauza: null });
+}
+
+function ukloniVjezbuIzTreninga(idx) {
+  trForma.value.vjezbe.splice(idx, 1);
+}
+
+const povuceniIndeks = ref(null);
+
+function pocniPovlacenje(idx) {
+  povuceniIndeks.value = idx;
+}
+
+function pomakniPovlacenjem(idx) {
+  if (povuceniIndeks.value === null || povuceniIndeks.value === idx) return;
+  const niz = trForma.value.vjezbe;
+  const [stavka] = niz.splice(povuceniIndeks.value, 1);
+  niz.splice(idx, 0, stavka);
+  povuceniIndeks.value = idx;
+}
+
+function zavrsiPovlacenje() {
+  povuceniIndeks.value = null;
+}
+
+async function otvoriFormuTreninga(t) {
+  trGreska.value = '';
+  if (t) {
+    trUredjujeSeId.value = t._id;
+    try {
+      const { data } = await api.get(`/treninzi/${t._id}`);
+      trForma.value = {
+        naziv: data.trening.naziv,
+        opis: data.trening.opis || '',
+        vjezbe: data.trening.vjezbe.map(v => ({ vjezbaId: v._id, pauza: v.pauzaNakon ?? null })),
+        nacinIzvodjenja: data.trening.nacinIzvodjenja || 'redom',
+      };
+    } catch (err) {
+      console.error(err);
+      trForma.value = { naziv: t.naziv, opis: t.opis || '', vjezbe: [] };
+    }
+  } else {
+    trUredjujeSeId.value = null;
+    trForma.value = praznaTrForma();
+  }
+  trKorak.value = 'forma';
+}
+
+async function spremiTrening() {
+  trGreska.value = '';
+  if (!trForma.value.naziv.trim()) return (trGreska.value = 'Naziv je obavezan.');
+  if (trForma.value.vjezbe.length === 0) return (trGreska.value = 'Dodaj barem jednu vježbu.');
+
+  trSpremanje.value = true;
+  try {
+    if (trUredjujeSeId.value) {
+      await api.put(`/treninzi/${trUredjujeSeId.value}`, trForma.value);
+    } else {
+      await api.post('/treninzi', trForma.value);
+    }
+    trKorak.value = 'lista';
+    await ucitajTreninge();
+  } catch (err) {
+    trGreska.value = err.response?.data?.poruka || 'Greška pri spremanju treninga.';
+  } finally {
+    trSpremanje.value = false;
+  }
+}
+
+async function obrisiTrening(t) {
+  if (!(await potvrdi(`Sigurno obrisati trening "${t.naziv}"?`))) return;
+  try {
+    await api.delete(`/treninzi/${t._id}`);
+    await ucitajTreninge();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 onMounted(() => {
   ucitajTrenutnoUTeretani();
   ucitajFeedback();
@@ -644,6 +1125,150 @@ onMounted(() => {
   transition: all 0.2s;
 }
 .tab-aktivan { background: #f5c800; border-color: #f5c800; color: #1a1a1a; }
+
+.podprikaz-tabovi {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1.5rem 2rem 0;
+  max-width: 780px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.podprikaz-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(255,255,255,0.4);
+  padding: 0.5rem 0.25rem;
+  margin-right: 1.25rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.podprikaz-tab-aktivan { color: #f5c800; border-bottom-color: #f5c800; }
+
+.prazno-manje-tekst { color: rgba(255,255,255,0.3); font-size: 0.85rem; padding: 0.5rem 0; }
+
+.odabrane-vjezbe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: #1e1e1e;
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.odabrana-vjezba-red {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.3rem;
+  border-radius: 8px;
+  transition: background 0.15s, opacity 0.15s;
+}
+.odabrana-vjezba-red:hover { background: rgba(255,255,255,0.03); }
+.odabrana-vjezba-vuce-se { opacity: 0.4; }
+
+.drzac-za-povlacenje {
+  color: rgba(255,255,255,0.3);
+  cursor: grab;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.drzac-za-povlacenje:active { cursor: grabbing; }
+
+.odabrana-vjezba-pauza {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.pauza-input-malo {
+  width: 60px;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: #fff;
+  padding: 0.3rem 0.4rem;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.82rem;
+  text-align: right;
+}
+.pauza-input-malo:focus { outline: none; border-color: #f5c800; }
+
+.pauza-input-oznaka { color: rgba(255,255,255,0.4); font-size: 0.78rem; }
+
+.odabrana-vjezba-broj { color: rgba(255,255,255,0.35); font-size: 0.85rem; width: 1.5rem; flex-shrink: 0; }
+.odabrana-vjezba-naziv { flex: 1; font-size: 0.9rem; color: #fff; }
+
+.gumb-strelica {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.6);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.gumb-strelica:hover:not(:disabled) { border-color: #f5c800; color: #f5c800; }
+.gumb-strelica:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.gumb-ukloni {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.gumb-ukloni:hover { background: rgba(239,68,68,0.22); }
+
+.pool-vjezbe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.pool-vjezba-red {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+.pool-vjezba-info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.pool-vjezba-naziv { font-size: 0.9rem; }
+.pool-vjezba-detalji { font-size: 0.75rem; color: #f5c800; }
+
+.gumb-dodaj-malo {
+  background: transparent;
+  border: 1px solid rgba(245,200,0,0.35);
+  color: #f5c800;
+  padding: 0.35rem 0.85rem;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.gumb-dodaj-malo:hover:not(:disabled) { background: rgba(245,200,0,0.1); }
+.gumb-dodaj-malo:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .lista-kartica {
   background: #252525;
