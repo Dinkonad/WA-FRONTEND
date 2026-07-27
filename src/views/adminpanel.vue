@@ -122,7 +122,7 @@
           </button>
           <button class="tip-kartica" @click="odaberiVrstu('tim')">
             <div class="tip-naslov">TIMSKI IZAZOVI</div>
-            <p class="tip-opis">Korisnici sami formiraju timove unutar izazova — tko napravi tim postaje kapetan i poziva ostale članove. Bodovi tima se računaju iz zbroja aktivnosti svih članova.</p>
+            <p class="tip-opis">Korisnici se sami pridružuju postojećem timu ili stvaraju novi unutar izazova. Bodovi tima su zbroj bodova svih članova, a svaki se član i dalje boduje pojedinačno na temelju svojih aktivnosti.</p>
           </button>
         </div>
       </div>
@@ -155,6 +155,32 @@
           <div class="forma-red">
             <label class="forma-label">Vrsta izazova</label>
             <div class="vrsta-oznaka">{{ forma.vrsta === 'tim' ? 'Timski' : 'Solo' }}</div>
+          </div>
+
+          <div v-if="forma.vrsta === 'tim'" class="forma-red">
+            <label class="forma-label">Veličina tima</label>
+            <div class="velicina-izbor">
+              <button
+                type="button"
+                class="velicina-gumb"
+                :class="{ 'velicina-aktivan': velicinaTimaMod === 'par' }"
+                @click="velicinaTimaMod = 'par'"
+              >
+                Parovi — točno 2 člana
+              </button>
+              <button
+                type="button"
+                class="velicina-gumb"
+                :class="{ 'velicina-aktivan': velicinaTimaMod === 'neograniceno' }"
+                @click="velicinaTimaMod = 'neograniceno'"
+              >
+                Neograničeno
+              </button>
+            </div>
+            <p class="nacin-opis">
+              <template v-if="velicinaTimaMod === 'par'">Timovi imaju točno dva člana — kad se popune, više se ne mogu birati.</template>
+              <template v-else>Timovi mogu imati bilo koji broj članova.</template>
+            </p>
           </div>
 
           <div class="forma-red">
@@ -613,6 +639,7 @@ const uredjujeSeId = ref(null);
 
 const forma = reactive({ naziv: '', opis: '', vrsta: 'solo', nacin: 'kumulativno', pocetak: '', kraj: '' });
 const uvjetiForma = reactive(praznaUvjetiForma());
+const velicinaTimaMod = ref('par');
 
 const prikazaniIzazovi = computed(() => tab.value === 'aktivni' ? aktivniIzazovi.value : prosliIzazovi.value);
 
@@ -637,6 +664,7 @@ async function ucitajIzazove() {
 function odaberiVrstu(vrsta) {
   Object.assign(forma, { naziv: '', opis: '', vrsta, nacin: 'kumulativno', pocetak: '', kraj: '' });
   Object.assign(uvjetiForma, praznaUvjetiForma());
+  velicinaTimaMod.value = 'par';
   uredjujeSeId.value = null;
   greska.value = '';
   korak.value = 'forma';
@@ -652,6 +680,7 @@ function otvoriUredjivanje(izazov) {
     pocetak: izazov.pocetak?.slice(0, 10),
     kraj: izazov.kraj?.slice(0, 10),
   });
+  velicinaTimaMod.value = izazov.velicinaTima === 2 ? 'par' : 'neograniceno';
   Object.assign(uvjetiForma, praznaUvjetiForma());
   (izazov.uvjeti || []).forEach(u => {
     if (!uvjetiForma[u.tip]) return;
@@ -685,7 +714,11 @@ async function spremiIzazov() {
 
   spremanje.value = true;
   try {
-    const payload = { ...forma, uvjeti };
+    const payload = {
+      ...forma,
+      uvjeti,
+      velicinaTima: forma.vrsta === 'tim' ? (velicinaTimaMod.value === 'par' ? 2 : null) : null,
+    };
     if (uredjujeSeId.value) {
       await api.put(`/izazovi/${uredjujeSeId.value}`, payload);
     } else {
@@ -1570,6 +1603,23 @@ onMounted(() => {
   margin: 0.6rem 0 0;
   line-height: 1.4;
 }
+
+.velicina-izbor { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+.velicina-gumb {
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.velicina-gumb:hover { border-color: rgba(245,200,0,0.4); }
+.velicina-aktivan { background: rgba(245,200,0,0.12); border-color: #f5c800; color: #f5c800; }
 
 .aktivnosti-lista { display: flex; flex-direction: column; gap: 0.5rem; }
 
