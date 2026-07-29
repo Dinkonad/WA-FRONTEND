@@ -56,6 +56,12 @@ const routes = [
     meta: { zastiteno: true },
   },
   {
+    path: '/video-trening',
+    name: 'VideoTrening',
+    component: () => import('../views/VideoTrening.vue'),
+    meta: { zastiteno: true },
+  },
+  {
     path: '/profil',
     name: 'Profil',
     component: () => import('../views/Profil.vue'),

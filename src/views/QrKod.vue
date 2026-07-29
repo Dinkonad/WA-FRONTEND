@@ -1,46 +1,7 @@
 <template>
   <div class="dashboard">
 
-    <aside class="sidebar" :class="{ 'sidebar-open': mobilniMeni }">
-      <div class="sidebar-logo">
-        <img src="../assets/logo.png" alt="logo" class="logo-img" />
-      </div>
-      <div class="guzva-sidebar">
-        <span class="guzva-tocka"></span>
-        <span class="guzva-broj-sidebar">{{ brojUTeretani !== null ? brojUTeretani : '–' }}</span>
-        <span class="guzva-tekst-sidebar">u teretani</span>
-      </div>
-      <nav class="sidebar-nav">
-        <button class="nav-item" @click="router.push('/dashboard')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span>STATISTIKE</span>
-        </button>
-        <button class="nav-item" @click="router.push('/feed')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
-          <span>FITNES FEED</span>
-        </button>
-        <button class="nav-item" @click="router.push('/izazovi')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
-          <span>IZAZOVI</span>
-        </button>
-        <button class="nav-item active">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
-          <span>QR KOD</span>
-        </button>
-        <button class="nav-item" @click="router.push('/clanarina')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
-          <span>ČLANARINA</span>
-        </button>
-        <button class="nav-item" @click="router.push('/treninzi')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5M8 4l-4 4 12 12 4-4z"/><path d="M2 22l3-3M16 8l3-3"/></svg>
-          <span>TRENINZI</span>
-        </button>
-        <button class="nav-item" @click="router.push('/recepti')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
-          <span>RECEPTI</span>
-        </button>
-      </nav>
-    </aside>
+    <BocnaNavigacija aktivna="qr" :otvoren="mobilniMeni" />
 
     <div v-if="mobilniMeni" class="overlay" @click="mobilniMeni = false"></div>
 
@@ -82,6 +43,7 @@ import { useAuthStore } from '../stores/authStore.js';
 import api from '../services/api.js';
 import { ucitajSkriptu } from '../utils/aktivnosti.js';
 import ZaglavljeMeni from '../components/ZaglavljeMeni.vue';
+import BocnaNavigacija from '../components/BocnaNavigacija.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -91,7 +53,6 @@ const ucitavanje = ref(false);
 const token = ref(null);
 const vrijediDo = ref(null);
 const qrContainerRef = ref(null);
-const brojUTeretani = ref(null);
 
 function formatirajDatum(datum) {
   return new Date(datum).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -124,19 +85,8 @@ async function ucitajQrKod() {
   }
 }
 
-async function ucitajBrojUTeretani() {
-  try {
-    const { data } = await api.get('/clanarina/broj-u-teretani');
-    brojUTeretani.value = data.broj;
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-
 onMounted(() => {
   ucitajQrKod();
-  ucitajBrojUTeretani();
 });
 </script>
 
