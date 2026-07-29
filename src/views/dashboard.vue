@@ -873,7 +873,7 @@ async function preuzmiKaoSliku(akt) {
 async function dohvatiAktivnosti() {
   ucitavanje.value = true;
   try {
-    const { data } = await api.get('/strava/aktivnosti?velicina=100');
+    const { data } = await api.get('/strava/aktivnosti?velicina=5000');
     aktivnosti.value = data.aktivnosti || [];
     stravaSpojeno.value = data.stravaSpojeno;
   } catch (err) {
