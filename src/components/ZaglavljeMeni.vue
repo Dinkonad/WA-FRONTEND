@@ -20,7 +20,7 @@
 
     <div class="meni-wrap">
       <button class="ikona-gumb" @click.stop="otvoriProfil">
-        <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="avatar-mini" />
+        <img v-if="auth.korisnik?.slika || auth.korisnik?.stravaProfilna" :src="auth.korisnik.slika || auth.korisnik.stravaProfilna" class="avatar-mini" />
         <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
       </button>
 

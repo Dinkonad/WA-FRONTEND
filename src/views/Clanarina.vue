@@ -37,7 +37,7 @@
         </button>
         <button class="nav-item" @click="router.push('/recepti')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
-          <span>RECEPTI AI</span>
+          <span>RECEPTI</span>
         </button>
       </nav>
     </aside>

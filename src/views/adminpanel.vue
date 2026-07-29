@@ -18,6 +18,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5M8 4l-4 4 12 12 4-4z"/><path d="M2 22l3-3M16 8l3-3"/></svg>
           <span>TRENINZI</span>
         </button>
+        <button class="nav-item" :class="{ active: prikaz === 'recepti' }" @click="odaberiPrikaz('recepti')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
+          <span>RECEPTI</span>
+        </button>
       </nav>
     </aside>
 
@@ -483,6 +487,92 @@
         </div>
       </div>
 
+      <div v-if="prikaz === 'recepti' && receptKorak === 'lista'" class="sadrzaj">
+        <div v-if="ucitavanjeRecepata" class="ucitavanje"><div class="spinner"></div></div>
+
+        <div v-else class="lista-kartica">
+          <div v-if="recepti.length === 0" class="prazno">Nema dodanih recepata.</div>
+          <div v-for="r in recepti" :key="r._id" class="red-izazova">
+            <div class="red-info">
+              <span class="red-naziv">{{ r.naziv }}</span>
+              <span class="red-meta">
+                <template v-if="r.porcije">{{ r.porcije }} · </template>
+                <template v-if="r.kalorije">{{ r.kalorije }} kcal</template>
+              </span>
+            </div>
+            <div class="red-akcije">
+              <button class="gumb-uredi" @click="otvoriFormuRecepta(r)">Uredi</button>
+              <button class="gumb-obrisi" @click="obrisiRecept(r)" title="Obriši">✕</button>
+            </div>
+          </div>
+
+          <button class="gumb-dodaj-novi" @click="otvoriFormuRecepta()">DODAJ RECEPT</button>
+        </div>
+      </div>
+
+      <div v-if="prikaz === 'recepti' && receptKorak === 'forma'" class="sadrzaj">
+        <button class="gumb-nazad" @click="receptKorak = 'lista'">‹ Nazad</button>
+        <div class="forma-kartica">
+          <div class="forma-red">
+            <label class="forma-label">Naziv recepta</label>
+            <input v-model="receptForma.naziv" class="forma-input" placeholder="npr. Proteinski mafin" />
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Slika</label>
+            <div class="upload-slika-wrap" @click="$refs.receptSlikaInput.click()">
+              <img v-if="receptForma.slika" :src="receptForma.slika" class="upload-slika-pregled" />
+              <div v-else class="upload-slika-prazno">+ Dodaj sliku</div>
+              <div v-if="uploadSlikeUTijeku" class="upload-slika-ucitavanje">Uploadam...</div>
+            </div>
+            <input ref="receptSlikaInput" type="file" accept="image/*" class="upload-slika-input-skriveno" @change="uploadSlikuRecepta" />
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Porcije</label>
+            <input v-model="receptForma.porcije" class="forma-input" placeholder="npr. 6 komada" />
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Sastojci (jedan po redu)</label>
+            <textarea v-model="receptForma.sastojci" class="forma-textarea" placeholder="2 jaja&#10;1 zrela banana&#10;100 g grčkog jogurta"></textarea>
+          </div>
+
+          <div class="forma-red">
+            <label class="forma-label">Priprema (jedan korak po redu)</label>
+            <textarea v-model="receptForma.priprema" class="forma-textarea" placeholder="Ubaci sve sastojke u blender...&#10;Sipaj smjesu u kalupe...&#10;Peci 15-20 minuta na 180°C"></textarea>
+          </div>
+
+          <div class="forma-red forma-red-dvije">
+            <div>
+              <label class="forma-label">Kalorije</label>
+              <input v-model="receptForma.kalorije" class="forma-input" placeholder="npr. ~120 kcal" />
+            </div>
+            <div>
+              <label class="forma-label">Proteini</label>
+              <input v-model="receptForma.proteini" class="forma-input" placeholder="npr. ~10-12 g" />
+            </div>
+          </div>
+
+          <div class="forma-red forma-red-dvije">
+            <div>
+              <label class="forma-label">Ugljikohidrati</label>
+              <input v-model="receptForma.ugljikohidrati" class="forma-input" placeholder="npr. ~8-10 g" />
+            </div>
+            <div>
+              <label class="forma-label">Masti</label>
+              <input v-model="receptForma.masti" class="forma-input" placeholder="npr. ~4 g" />
+            </div>
+          </div>
+
+          <div v-if="receptGreska" class="poruka-greska">{{ receptGreska }}</div>
+
+          <button class="gumb-spremi" @click="spremiRecept" :disabled="receptSpremanje">
+            {{ receptSpremanje ? 'Spremam...' : (receptUredjujeSeId ? 'SPREMI PROMJENE' : 'DODAJ RECEPT') }}
+          </button>
+        </div>
+      </div>
+
     </main>
   </div>
 </template>
@@ -545,12 +635,13 @@ const novaObavijest = ref('');
 const spremanjeObavijesti = ref(false);
 const izazoviUcitani = ref(false);
 
-const naslovi = { dashboard: 'Dashboard', izazovi: 'Izazovi', treninzi: 'Treninzi' };
+const naslovi = { dashboard: 'Dashboard', izazovi: 'Izazovi', treninzi: 'Treninzi', recepti: 'Recepti' };
 
 function odaberiPrikaz(novi) {
   prikaz.value = novi;
   if (novi === 'izazovi' && !izazoviUcitani.value) ucitajIzazove();
   if (novi === 'treninzi' && !vjOpcijeUcitane.value) ucitajVjOpcijeIVjezbe();
+  if (novi === 'recepti' && !receptiUcitani.value) ucitajRecepte();
 }
 
 function formatirajVrijemeUlaska(datum) {
@@ -992,6 +1083,108 @@ async function obrisiTrening(t) {
   try {
     await api.delete(`/treninzi/${t._id}`);
     await ucitajTreninge();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+const receptKorak = ref('lista');
+const recepti = ref([]);
+const receptiUcitani = ref(false);
+const ucitavanjeRecepata = ref(false);
+const receptUredjujeSeId = ref(null);
+const receptGreska = ref('');
+const receptSpremanje = ref(false);
+
+function praznaReceptForma() {
+  return { naziv: '', slika: '', porcije: '', sastojci: '', priprema: '', kalorije: '', proteini: '', ugljikohidrati: '', masti: '' };
+}
+const receptForma = ref(praznaReceptForma());
+const uploadSlikeUTijeku = ref(false);
+
+async function uploadSlikuRecepta(event) {
+  const datoteka = event.target.files[0];
+  if (!datoteka) return;
+
+  const formData = new FormData();
+  formData.append('slika', datoteka);
+
+  uploadSlikeUTijeku.value = true;
+  receptGreska.value = '';
+  try {
+    const { data } = await api.post('/recepti/slika', formData);
+    receptForma.value.slika = data.slika;
+  } catch (err) {
+    receptGreska.value = err.response?.data?.poruka || 'Greška pri uploadu slike.';
+  } finally {
+    uploadSlikeUTijeku.value = false;
+    event.target.value = '';
+  }
+}
+
+async function ucitajRecepte() {
+  ucitavanjeRecepata.value = true;
+  try {
+    const { data } = await api.get('/recepti');
+    recepti.value = data.recepti || [];
+    receptiUcitani.value = true;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavanjeRecepata.value = false;
+  }
+}
+
+function otvoriFormuRecepta(r) {
+  if (r) {
+    receptUredjujeSeId.value = r._id;
+    receptForma.value = {
+      naziv: r.naziv,
+      slika: r.slika || '',
+      porcije: r.porcije || '',
+      sastojci: r.sastojci,
+      priprema: r.priprema,
+      kalorije: r.kalorije || '',
+      proteini: r.proteini || '',
+      ugljikohidrati: r.ugljikohidrati || '',
+      masti: r.masti || '',
+    };
+  } else {
+    receptUredjujeSeId.value = null;
+    receptForma.value = praznaReceptForma();
+  }
+  receptGreska.value = '';
+  receptKorak.value = 'forma';
+}
+
+async function spremiRecept() {
+  receptGreska.value = '';
+
+  if (!receptForma.value.naziv.trim()) return (receptGreska.value = 'Naziv je obavezan.');
+  if (!receptForma.value.sastojci.trim()) return (receptGreska.value = 'Sastojci su obavezni.');
+  if (!receptForma.value.priprema.trim()) return (receptGreska.value = 'Priprema je obavezna.');
+
+  receptSpremanje.value = true;
+  try {
+    if (receptUredjujeSeId.value) {
+      await api.put(`/recepti/${receptUredjujeSeId.value}`, receptForma.value);
+    } else {
+      await api.post('/recepti', receptForma.value);
+    }
+    await ucitajRecepte();
+    receptKorak.value = 'lista';
+  } catch (err) {
+    receptGreska.value = err.response?.data?.poruka || 'Greška pri spremanju recepta.';
+  } finally {
+    receptSpremanje.value = false;
+  }
+}
+
+async function obrisiRecept(r) {
+  if (!(await potvrdi(`Sigurno želiš obrisati recept "${r.naziv}"? Ovo se ne može poništiti.`))) return;
+  try {
+    await api.delete(`/recepti/${r._id}`);
+    await ucitajRecepte();
   } catch (err) {
     console.error(err);
   }
@@ -1562,6 +1755,45 @@ onMounted(() => {
   border-color: #f5c800;
 }
 .forma-textarea { min-height: 70px; resize: vertical; }
+
+.upload-slika-input-skriveno { display: none; }
+
+.upload-slika-wrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #1e1e1e;
+  border: 1px dashed rgba(255,255,255,0.2);
+}
+
+.upload-slika-pregled { width: 100%; height: 100%; object-fit: cover; }
+
+.upload-slika-prazno {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.4);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.upload-slika-ucitavanje {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f5c800;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 
 .vrsta-oznaka {
   display: inline-block;

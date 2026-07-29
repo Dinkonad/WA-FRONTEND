@@ -37,7 +37,7 @@
         </button>
         <button class="nav-item active">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
-          <span>RECEPTI AI</span>
+          <span>RECEPTI</span>
         </button>
       </nav>
     </aside>
@@ -49,7 +49,7 @@
         <button class="hamburger" @click="mobilniMeni = !mobilniMeni">
           <span></span><span></span><span></span>
         </button>
-        <h1 class="header-naslov">Recepti AI</h1>
+        <h1 class="header-naslov">Recepti</h1>
         <ZaglavljeMeni />
       </header>
 
@@ -63,10 +63,63 @@
           <button class="gumb-nadogradi" @click="router.push('/clanarina')">Nadogradi na Premium</button>
         </div>
 
-        <div v-else class="placeholder-kartica">
-          <h2 class="placeholder-naslov">Recepti uskoro dolaze</h2>
-          <p class="placeholder-tekst">Ovdje će se pojaviti recepti i savjeti o prehrani.</p>
-        </div>
+        <template v-else>
+          <template v-if="korak === 'lista'">
+            <div v-if="ucitavanjeRecepata" class="ucitavanje"><div class="spinner"></div></div>
+            <div v-else-if="recepti.length === 0" class="placeholder-kartica">
+              <h2 class="placeholder-naslov">Recepti uskoro dolaze</h2>
+              <p class="placeholder-tekst">Ovdje će se pojaviti recepti i savjeti o prehrani.</p>
+            </div>
+            <div v-else class="recepti-grid">
+              <button v-for="r in recepti" :key="r._id" class="recept-kartica" @click="otvoriRecept(r)">
+                <div class="recept-slika-wrap">
+                  <img v-if="r.slika" :src="r.slika" class="recept-slika" />
+                  <div v-else class="recept-slika-prazna">🍽</div>
+                </div>
+                <div class="recept-info">
+                  <span class="recept-naziv">{{ r.naziv }}</span>
+                  <span v-if="r.porcije" class="recept-porcije">{{ r.porcije }}</span>
+                </div>
+              </button>
+            </div>
+          </template>
+
+          <template v-else-if="korak === 'detalji' && odabraniRecept">
+            <div class="recept-detalji-wrap">
+              <button class="gumb-nazad" @click="korak = 'lista'">‹ Nazad</button>
+
+              <div class="detalji-kartica">
+                <img v-if="odabraniRecept.slika" :src="odabraniRecept.slika" class="detalji-slika" />
+                <h2 class="detalji-naziv">{{ odabraniRecept.naziv }}</h2>
+                <span v-if="odabraniRecept.porcije" class="detalji-porcije">{{ odabraniRecept.porcije }}</span>
+
+                <div class="detalji-sekcija">
+                  <div class="detalji-podnaslov">SASTOJCI</div>
+                  <ul class="sastojci-lista">
+                    <li v-for="(s, idx) in redoviTeksta(odabraniRecept.sastojci)" :key="idx">{{ s }}</li>
+                  </ul>
+                </div>
+
+                <div class="detalji-sekcija">
+                  <div class="detalji-podnaslov">PRIPREMA</div>
+                  <ol class="priprema-lista">
+                    <li v-for="(p, idx) in redoviTeksta(odabraniRecept.priprema)" :key="idx">{{ p }}</li>
+                  </ol>
+                </div>
+
+                <div v-if="odabraniRecept.kalorije || odabraniRecept.proteini || odabraniRecept.ugljikohidrati || odabraniRecept.masti" class="detalji-sekcija">
+                  <div class="detalji-podnaslov">NUTRITIVNA VRIJEDNOST (PO PORCIJI, OKVIRNO)</div>
+                  <div class="nutritivna-red">
+                    <span v-if="odabraniRecept.kalorije">Kalorije: {{ odabraniRecept.kalorije }}</span>
+                    <span v-if="odabraniRecept.proteini">Proteini: {{ odabraniRecept.proteini }}</span>
+                    <span v-if="odabraniRecept.ugljikohidrati">Ugljikohidrati: {{ odabraniRecept.ugljikohidrati }}</span>
+                    <span v-if="odabraniRecept.masti">Masti: {{ odabraniRecept.masti }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </template>
       </div>
     </main>
   </div>
@@ -85,8 +138,33 @@ const ucitavanje = ref(false);
 const brojUTeretani = ref(null);
 const mojZahtjev = ref(null);
 const istekla = ref(false);
+const korak = ref('lista');
+const recepti = ref([]);
+const ucitavanjeRecepata = ref(false);
+const odabraniRecept = ref(null);
 
 const jePremium = computed(() => mojZahtjev.value?.status === 'odobreno' && mojZahtjev.value?.plan === 'premium' && !istekla.value);
+
+function redoviTeksta(tekst) {
+  return (tekst || '').split('\n').map(r => r.trim()).filter(Boolean);
+}
+
+function otvoriRecept(r) {
+  odabraniRecept.value = r;
+  korak.value = 'detalji';
+}
+
+async function ucitajRecepte() {
+  ucitavanjeRecepata.value = true;
+  try {
+    const { data } = await api.get('/recepti');
+    recepti.value = data.recepti || [];
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavanjeRecepata.value = false;
+  }
+}
 
 async function ucitajMojZahtjev() {
   ucitavanje.value = true;
@@ -94,6 +172,7 @@ async function ucitajMojZahtjev() {
     const { data } = await api.get('/clanarina/moja');
     mojZahtjev.value = data.zahtjev;
     istekla.value = data.istekla;
+    if (jePremium.value) ucitajRecepte();
   } catch (err) {
     console.error(err);
   } finally {
@@ -287,6 +366,114 @@ onMounted(() => {
   transition: background 0.2s;
 }
 .gumb-nadogradi:hover { background: #ffd700; }
+
+.recepti-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.1rem;
+  width: 100%;
+}
+
+.recept-kartica {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #252525;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color 0.2s;
+}
+.recept-kartica:hover { border-color: rgba(245,200,0,0.3); }
+
+.recept-slika-wrap { width: 100%; height: 140px; background: #1e1e1e; }
+.recept-slika { width: 100%; height: 100%; object-fit: cover; display: block; }
+.recept-slika-prazna {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+}
+
+.recept-info { padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.recept-naziv { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; }
+.recept-porcije { font-size: 0.78rem; color: rgba(255,255,255,0.45); }
+
+.recept-detalji-wrap { width: 100%; }
+
+.gumb-nazad {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1.25rem;
+  font-family: 'Barlow', sans-serif;
+}
+.gumb-nazad:hover { color: #f5c800; }
+
+.detalji-kartica {
+  background: #252525;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.detalji-slika {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.detalji-naziv {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 0.3rem;
+}
+
+.detalji-porcije { display: block; font-size: 0.85rem; color: rgba(255,255,255,0.45); margin-bottom: 1.25rem; }
+
+.detalji-sekcija { margin-top: 1.25rem; }
+
+.detalji-podnaslov {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f5c800;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.6rem;
+}
+
+.sastojci-lista, .priprema-lista {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.8);
+  line-height: 1.4;
+}
+
+.nutritivna-red {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.25rem;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.7);
+  background: #1e1e1e;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+}
 
 @media (max-width: 768px) {
   .sidebar {

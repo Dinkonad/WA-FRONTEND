@@ -37,7 +37,7 @@
         </button>
         <button class="nav-item" @click="router.push('/recepti')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
-          <span>RECEPTI AI</span>
+          <span>RECEPTI</span>
         </button>
       </nav>
     </aside>
@@ -59,8 +59,15 @@
         <template v-else>
           <div class="profil-kartica">
             <div class="profil-vrh">
-              <img v-if="auth.korisnik?.stravaProfilna" :src="auth.korisnik.stravaProfilna" class="profil-avatar" />
-              <div v-else class="profil-avatar-inicijali">{{ inicijali }}</div>
+              <div class="profil-avatar-wrap" @click="$refs.profilSlikaInput.click()">
+                <img v-if="prikaznaSlika" :src="prikaznaSlika" class="profil-avatar" />
+                <div v-else class="profil-avatar-inicijali">{{ inicijali }}</div>
+                <div class="profil-avatar-hover">
+                  <span v-if="uploadSlikeUTijeku">Uploadam...</span>
+                  <span v-else>Uredi</span>
+                </div>
+              </div>
+              <input ref="profilSlikaInput" type="file" accept="image/*" class="upload-slika-input-skriveno" @change="uploadSlikuProfila" />
               <div class="profil-vrh-info">
                 <h2>{{ profil.ime }}</h2>
                 <span>Član od {{ formatirajDatum(profil.clanOd) }}</span>
@@ -175,6 +182,33 @@ const inicijali = computed(() => {
   const ime = profil.value.ime || '';
   return ime.split(' ').map(r => r[0]).join('').toUpperCase().slice(0, 2);
 });
+
+const prikaznaSlika = computed(() => profil.value.slika || auth.korisnik?.stravaProfilna);
+
+const uploadSlikeUTijeku = ref(false);
+
+async function uploadSlikuProfila(event) {
+  const datoteka = event.target.files[0];
+  if (!datoteka) return;
+
+  const formData = new FormData();
+  formData.append('slika', datoteka);
+
+  uploadSlikeUTijeku.value = true;
+  try {
+    const { data } = await api.post('/korisnici/profil/slika', formData);
+    profil.value.slika = data.slika;
+    if (auth.korisnik) {
+      auth.korisnik.slika = data.slika;
+      localStorage.setItem('korisnik', JSON.stringify(auth.korisnik));
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    uploadSlikeUTijeku.value = false;
+    event.target.value = '';
+  }
+}
 
 function formatirajDatum(datum) {
   const d = new Date(datum);
@@ -394,6 +428,35 @@ onMounted(() => {
   display: flex; align-items: center; justify-content: center;
   font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.4rem;
 }
+
+.profil-avatar-wrap {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.profil-avatar-hover {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: #f5c800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.profil-avatar-wrap:hover .profil-avatar-hover { opacity: 1; }
+
+.upload-slika-input-skriveno { display: none; }
 
 .profil-vrh-info { flex: 1; min-width: 0; }
 .profil-vrh-info h2 {
