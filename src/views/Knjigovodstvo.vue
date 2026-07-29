@@ -36,7 +36,6 @@
         <OdjavaKrug />
       </header>
 
-      <!-- STATISTIKA -->
       <div v-if="prikaz === 'statistika'" class="sadrzaj">
         <div class="statistika-header">
           <div class="period-filter">
@@ -148,7 +147,6 @@
         </template>
       </div>
 
-      <!-- PRIHOD / RASHOD -->
       <div v-else-if="prikaz === 'prihod' || prikaz === 'rashod'" class="sadrzaj">
         <button class="gumb-dodaj-financiju" @click="otvoriFormu(prikaz)">+ Dodaj {{ prikaz === 'prihod' ? 'prihod' : 'rashod' }}</button>
 
@@ -208,7 +206,6 @@
         </div>
       </div>
 
-      <!-- ČLANARINA -->
       <div v-else class="sadrzaj">
         <div class="tabovi">
           <button class="tab" :class="{ 'tab-aktivan': tab === 'na_cekanju' }" @click="tab = 'na_cekanju'">Na čekanju</button>
@@ -289,8 +286,6 @@ function odaberiPrikaz(novi) {
   if (novi === 'clanarina' && !zahtjeviUcitani.value) ucitajZahtjeve();
 }
 
-// ČLANARINA
-
 const tab = ref('na_cekanju');
 const ucitavanje = ref(false);
 const zahtjevi = ref([]);
@@ -356,8 +351,6 @@ async function obrisi(z) {
 }
 
 watch(tab, ucitajZahtjeve);
-
-// PRIHOD / RASHOD
 
 const kategorije = ref({ prihod: [], rashod: [] });
 const financije = ref([]);
@@ -440,8 +433,6 @@ async function obrisiFinanciju(f) {
     console.error(err);
   }
 }
-
-// STATISTIKA
 
 const statPeriod = ref('mjesecno');
 const ucitavanjeStat = ref(false);
@@ -806,7 +797,6 @@ onMounted(() => {
   font-size: 0.85rem;
 }
 
-/* Prihod / Rashod forma i lista */
 
 .gumb-dodaj-financiju {
   display: block;
@@ -904,7 +894,6 @@ onMounted(() => {
 .stat-prihod { color: #4ade80; }
 .stat-rashod { color: #f87171; }
 
-/* Statistika */
 
 .statistika-header {
   display: flex;

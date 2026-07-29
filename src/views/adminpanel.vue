@@ -743,8 +743,6 @@ async function obrisiIzazov(izazov) {
   }
 }
 
-// TRENINZI (vježbe)
-
 const vjKorak = ref('lista');
 const vjKategorije = ref([]);
 const vjRazine = ref([]);
@@ -860,8 +858,6 @@ async function obrisiVjezbu(v) {
     console.error(err);
   }
 }
-
-// TRENINZI (gotovi treninzi sastavljeni od vježbi)
 
 const vjPodprikaz = ref('vjezbe');
 const trKorak = ref('lista');
