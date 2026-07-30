@@ -22,6 +22,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2M5 2v20M17 2c-2 3-2 8 0 11v9"/></svg>
           <span>RECEPTI</span>
         </button>
+        <button class="nav-item" :class="{ active: prikaz === 'korisnici' }" @click="odaberiPrikaz('korisnici')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>KORISNICI</span>
+        </button>
       </nav>
     </aside>
 
@@ -573,6 +577,24 @@
         </div>
       </div>
 
+      <div v-if="prikaz === 'korisnici'" class="sadrzaj">
+        <div v-if="korisniciGreska" class="poruka-greska">{{ korisniciGreska }}</div>
+        <div v-if="ucitavanjeKorisnika" class="ucitavanje"><div class="spinner"></div></div>
+
+        <div v-else class="lista-kartica">
+          <div v-if="korisnici.length === 0" class="prazno">Nema korisnika.</div>
+          <div v-for="k in korisnici" :key="k._id" class="red-izazova">
+            <div class="red-info">
+              <span class="red-naziv">{{ k.ime }}</span>
+              <span class="red-meta">{{ k.email }} · {{ nazivUloge(k.uloga) }} · član od {{ formatirajDatum(k.createdAt) }}</span>
+            </div>
+            <div class="red-akcije">
+              <button class="gumb-obrisi" @click="obrisiKorisnika(k)" title="Obriši">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </template>
@@ -635,13 +657,14 @@ const novaObavijest = ref('');
 const spremanjeObavijesti = ref(false);
 const izazoviUcitani = ref(false);
 
-const naslovi = { dashboard: 'Dashboard', izazovi: 'Izazovi', treninzi: 'Treninzi', recepti: 'Recepti' };
+const naslovi = { dashboard: 'Dashboard', izazovi: 'Izazovi', treninzi: 'Treninzi', recepti: 'Recepti', korisnici: 'Korisnici' };
 
 function odaberiPrikaz(novi) {
   prikaz.value = novi;
   if (novi === 'izazovi' && !izazoviUcitani.value) ucitajIzazove();
   if (novi === 'treninzi' && !vjOpcijeUcitane.value) ucitajVjOpcijeIVjezbe();
   if (novi === 'recepti' && !receptiUcitani.value) ucitajRecepte();
+  if (novi === 'korisnici' && !korisniciUcitani.value) ucitajKorisnike();
 }
 
 function formatirajVrijemeUlaska(datum) {
@@ -1187,6 +1210,40 @@ async function obrisiRecept(r) {
     await ucitajRecepte();
   } catch (err) {
     console.error(err);
+  }
+}
+
+const korisnici = ref([]);
+const korisniciUcitani = ref(false);
+const ucitavanjeKorisnika = ref(false);
+const korisniciGreska = ref('');
+
+const NAZIVI_ULOGA = { korisnik: 'Korisnik', admin: 'Admin', knjigovodstvo: 'Knjigovodstvo', recepcija: 'Recepcija' };
+function nazivUloge(uloga) {
+  return NAZIVI_ULOGA[uloga] || uloga;
+}
+
+async function ucitajKorisnike() {
+  ucitavanjeKorisnika.value = true;
+  try {
+    const { data } = await api.get('/korisnici');
+    korisnici.value = data.korisnici || [];
+    korisniciUcitani.value = true;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    ucitavanjeKorisnika.value = false;
+  }
+}
+
+async function obrisiKorisnika(k) {
+  if (!(await potvrdi(`Sigurno želiš obrisati korisnika "${k.ime}" (${k.email})? Ovo trajno briše njegov račun i sve njegove tragove iz cijele baze (aktivnosti, izazove, članarine, komentare, lajkove...). Ovo se ne može poništiti.`))) return;
+  korisniciGreska.value = '';
+  try {
+    await api.delete(`/korisnici/${k._id}`);
+    await ucitajKorisnike();
+  } catch (err) {
+    korisniciGreska.value = err.response?.data?.poruka || 'Greška pri brisanju korisnika.';
   }
 }
 

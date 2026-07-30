@@ -244,4 +244,15 @@ onBeforeUnmount(() => {
 
 .stavka-odjava { color: #fca5a5; margin-top: 0.2rem; }
 .stavka-odjava:hover { background: rgba(239,68,68,0.12); color: #fca5a5; }
+
+@media (max-width: 480px) {
+  .padajuci {
+    position: fixed;
+    top: 4.75rem;
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+  .padajuci-obavijesti, .padajuci-profil { width: auto; }
+}
 </style>

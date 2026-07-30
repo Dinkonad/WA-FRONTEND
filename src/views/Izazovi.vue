@@ -113,7 +113,7 @@
               <div v-if="odabraniIzazov.vrsta === 'tim' && odabraniIzazov.pridruzen" class="timovi-sekcija">
                 <div v-if="odabraniIzazov.ucitavaTimove" class="ljestvica-ucitavanje">Učitavam tim...</div>
                 <template v-else-if="mojTimZaIzazov(odabraniIzazov)">
-                  <div class="uvjeti-naslov">TVOJ TIM — {{ mojTimZaIzazov(odabraniIzazov).naziv }}</div>
+                  <div class="tvoj-tim-naslov">TVOJ TIM — {{ mojTimZaIzazov(odabraniIzazov).naziv }}</div>
                   <div class="timovi-lista">
                     <div v-for="c in mojTimZaIzazov(odabraniIzazov).clanovi" :key="c.korisnikId" class="tim-clan-red">
                       <img v-if="c.slika" :src="c.slika" class="ljestvica-avatar" />
@@ -789,6 +789,15 @@ onMounted(() => {
 .napomena-zatvoreno-veca { font-size: 0.9rem; color: rgba(255,255,255,0.4); font-style: italic; margin: 0 0 1rem; }
 
 .timovi-sekcija { margin: 0 0 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+.tvoj-tim-naslov {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f5c800;
+  letter-spacing: 0.04em;
+  margin: 1.1rem 0 0.6rem;
+}
 
 .timovi-lista { display: flex; flex-direction: column; gap: 0.5rem; }
 
