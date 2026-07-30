@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard">
 
-    <BocnaNavigacija aktivna="video" :otvoren="mobilniMeni" :prikazi-guzvu="false" />
+    <BocnaNavigacija aktivna="video" :otvoren="mobilniMeni" />
 
     <div v-if="mobilniMeni" class="overlay" @click="mobilniMeni = false"></div>
 

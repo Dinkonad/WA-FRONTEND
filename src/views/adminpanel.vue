@@ -1953,6 +1953,7 @@ onMounted(() => {
     position: fixed; left: 0; top: 0; bottom: 0;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
+    overflow-y: auto;
   }
   .sidebar-open { transform: translateX(0); }
   .overlay { display: block; }
