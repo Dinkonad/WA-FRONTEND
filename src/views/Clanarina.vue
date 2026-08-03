@@ -81,7 +81,7 @@
             </div>
             <div class="forma-red">
               <label class="forma-label">Godište</label>
-              <input v-model.number="forma.godiste" type="number" class="forma-input" placeholder="npr. 1998" />
+              <input v-model.number="forma.godiste" type="number" min="1900" :max="trenutnaGodina" class="forma-input" placeholder="npr. 1998" />
             </div>
             <div class="forma-red">
               <label class="forma-label">Spol</label>
@@ -171,6 +171,7 @@ const istekla = ref(false);
 const zapoceoNoviZahtjev = ref(false);
 
 const forma = ref({ imePrezime: '', godiste: null, spol: '', broj: '' });
+const trenutnaGodina = new Date().getFullYear();
 
 
 const barkodUzorak = computed(() => {
@@ -231,6 +232,11 @@ async function posaljiZahtjev() {
     greska.value = 'Popuni sva polja.';
     return;
   }
+  if (forma.value.godiste < 1900 || forma.value.godiste > trenutnaGodina) {
+    korak.value = 'info';
+    greska.value = `Godište mora biti između 1900. i ${trenutnaGodina}.`;
+    return;
+  }
 
   slanje.value = true;
   try {
@@ -271,112 +277,6 @@ onMounted(async () => {
   font-size: 16px;
 }
 
-.sidebar {
-  width: 240px;
-  background: #f5c800;
-  display: flex;
-  flex-direction: column;
-  padding: 1.75rem 0;
-  flex-shrink: 0;
-  z-index: 100;
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 1.5rem 1.75rem;
-  border-bottom: 1px solid rgba(0,0,0,0.1);
-  margin-bottom: 1.25rem;
-}
-
-.logo-img { width: 85px; height: 85px; object-fit: contain; }
-
-.guzva-sidebar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  margin: 1rem 1rem 1.25rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(0,0,0,0.12);
-  border-radius: 20px;
-}
-
-.guzva-tocka {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #1a7a3e;
-  flex-shrink: 0;
-  box-shadow: 0 0 5px rgba(26,122,62,0.6);
-}
-
-.guzva-broj-sidebar {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 800;
-  color: #1a1a1a;
-  font-size: 1rem;
-}
-
-.guzva-tekst-sidebar {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: rgba(0,0,0,0.6);
-  letter-spacing: 0.03em;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 0 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.9rem 1.1rem;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: #1a1a1a;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: background 0.2s;
-  width: 100%;
-  text-align: left;
-}
-
-.nav-item.active, .nav-item:hover { background: rgba(0,0,0,0.1); }
-
-.sidebar-korisnik {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 1.1rem 1.35rem;
-  border-top: 1px solid rgba(0,0,0,0.1);
-}
-
-.korisnik-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0; }
-.korisnik-inicijali {
-  width: 42px; height: 42px; border-radius: 50%;
-  background: #1a1a1a; color: #f5c800;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1rem; flex-shrink: 0;
-}
-
-.korisnik-info { display: flex; flex-direction: column; gap: 0.2rem; overflow: hidden; }
-.korisnik-ime { color: #1a1a1a; font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gumb-odjava { background: none; border: none; color: rgba(0,0,0,0.5); font-size: 0.8rem; cursor: pointer; padding: 0; font-family: 'Barlow', sans-serif; }
-.gumb-odjava:hover { color: #1a1a1a; }
-
 .header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.5rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -416,31 +316,6 @@ onMounted(async () => {
   max-width: 500px;
   margin: 0 auto 1.5rem;
 }
-
-.period-izbor {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: center;
-  background: #252525;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 20px;
-  padding: 0.3rem;
-  width: fit-content;
-  margin: 0 auto 1.75rem;
-}
-
-.period-gumb {
-  background: transparent;
-  border: none;
-  color: rgba(255,255,255,0.5);
-  padding: 0.5rem 1.25rem;
-  border-radius: 16px;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.period-aktivan { background: #f5c800; color: #1a1a1a; }
 
 .planovi-grid {
   display: grid;
@@ -650,7 +525,6 @@ onMounted(async () => {
   margin: 2rem auto 0;
 }
 .status-odbijeno { border-color: rgba(239,68,68,0.3); }
-.status-ikona { font-size: 2.5rem; margin-bottom: 1rem; }
 .status-naslov { font-family: 'Barlow Condensed', sans-serif; font-size: 1.4rem; font-weight: 800; margin: 0 0 0.5rem; }
 .status-tekst { color: rgba(255,255,255,0.6); margin: 0 0 0.75rem; }
 .status-napomena { color: rgba(255,255,255,0.4); font-size: 0.85rem; line-height: 1.5; }
@@ -662,7 +536,6 @@ onMounted(async () => {
     transform: translateX(-100%);
     transition: transform 0.3s ease;
   }
-  .sidebar-open { transform: translateX(0); }
   .overlay { display: block; }
   .hamburger { display: flex; }
   .header { padding: 1.1rem 1.25rem; }

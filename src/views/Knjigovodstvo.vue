@@ -81,15 +81,15 @@
             </div>
           </div>
 
-          <div v-if="statistika.rashodBreakdown.length > 0" class="breakdown-kartica">
+          <div v-if="statistika.rashodPoKategoriji.length > 0" class="raspodjela-kartica">
             <div class="bar-chart-naslov">RASHOD PO KATEGORIJI</div>
-            <div v-for="r in statistika.rashodBreakdown" :key="r.kategorija" class="breakdown-red">
-              <div class="breakdown-info">
+            <div v-for="r in statistika.rashodPoKategoriji" :key="r.kategorija" class="raspodjela-red">
+              <div class="raspodjela-info">
                 <span>{{ r.kategorija }}</span>
                 <span>{{ r.iznos.toFixed(0) }} € · {{ r.postotak }}%</span>
               </div>
-              <div class="breakdown-traka-pozadina">
-                <div class="breakdown-traka" :style="{ width: r.postotak + '%' }"></div>
+              <div class="raspodjela-traka-pozadina">
+                <div class="raspodjela-traka" :style="{ width: r.postotak + '%' }"></div>
               </div>
             </div>
           </div>
@@ -113,14 +113,14 @@
             </div>
           </div>
 
-          <div v-if="retencija.churnLista.length > 0" class="breakdown-kartica">
+          <div v-if="retencija.istekliClanovi.length > 0" class="raspodjela-kartica">
             <div class="bar-chart-naslov">ČLANOVI KOJI NISU OBNOVILI ČLANARINU</div>
-            <div v-for="c in retencija.churnLista" :key="c.email || c.ime" class="churn-red">
-              <div class="churn-info">
-                <span class="churn-ime">{{ c.ime }}</span>
-                <span class="churn-detalji">{{ c.plan.toUpperCase() }} · isteklo {{ formatirajDatum(c.istekaoDatum) }}</span>
+            <div v-for="c in retencija.istekliClanovi" :key="c.email || c.ime" class="istekli-red">
+              <div class="istekli-info">
+                <span class="istekli-ime">{{ c.ime }}</span>
+                <span class="istekli-detalji">{{ c.plan.toUpperCase() }} · isteklo {{ formatirajDatum(c.istekaoDatum) }}</span>
               </div>
-              <span class="churn-dana">{{ c.danaOdIsteka }} {{ c.danaOdIsteka === 1 ? 'dan' : 'dana' }}</span>
+              <span class="istekli-dana">{{ c.danaOdIsteka }} {{ c.danaOdIsteka === 1 ? 'dan' : 'dana' }}</span>
             </div>
           </div>
           <div v-else class="prazno-manje">Svi članovi su ažurni — nitko nije istekao bez obnove.</div>
@@ -597,26 +597,6 @@ onMounted(() => {
 
 .nav-item.active, .nav-item:hover { background: rgba(0,0,0,0.1); }
 
-.sidebar-korisnik {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 1.1rem 1.35rem;
-  border-top: 1px solid rgba(0,0,0,0.1);
-}
-
-.korisnik-inicijali {
-  width: 42px; height: 42px; border-radius: 50%;
-  background: #1a1a1a; color: #f5c800;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1rem; flex-shrink: 0;
-}
-
-.korisnik-info { display: flex; flex-direction: column; gap: 0.2rem; overflow: hidden; }
-.korisnik-ime { color: #1a1a1a; font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gumb-odjava { background: none; border: none; color: rgba(0,0,0,0.5); font-size: 0.8rem; cursor: pointer; padding: 0; font-family: 'Barlow', sans-serif; }
-.gumb-odjava:hover { color: #1a1a1a; }
-
 .header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.5rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -947,7 +927,7 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-.churn-red {
+.istekli-red {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -955,12 +935,12 @@ onMounted(() => {
   padding: 0.85rem 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.churn-red:last-child { border-bottom: none; padding-bottom: 0; }
+.istekli-red:last-child { border-bottom: none; padding-bottom: 0; }
 
-.churn-info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
-.churn-ime { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.98rem; }
-.churn-detalji { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
-.churn-dana {
+.istekli-info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.istekli-ime { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.98rem; }
+.istekli-detalji { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
+.istekli-dana {
   flex-shrink: 0;
   background: rgba(239,68,68,0.12);
   color: #fca5a5;
@@ -1118,17 +1098,17 @@ onMounted(() => {
 .legenda-prihod { background: #4ade80; }
 .legenda-rashod { background: #f87171; }
 
-.breakdown-kartica {
+.raspodjela-kartica {
   background: #252525;
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 14px;
   padding: 1.5rem;
 }
 
-.breakdown-red { margin-bottom: 1rem; }
-.breakdown-red:last-child { margin-bottom: 0; }
+.raspodjela-red { margin-bottom: 1rem; }
+.raspodjela-red:last-child { margin-bottom: 0; }
 
-.breakdown-info {
+.raspodjela-info {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
@@ -1136,14 +1116,14 @@ onMounted(() => {
   margin-bottom: 0.4rem;
 }
 
-.breakdown-traka-pozadina {
+.raspodjela-traka-pozadina {
   background: rgba(255,255,255,0.06);
   border-radius: 6px;
   height: 8px;
   overflow: hidden;
 }
 
-.breakdown-traka {
+.raspodjela-traka {
   background: #f87171;
   height: 100%;
   border-radius: 6px;

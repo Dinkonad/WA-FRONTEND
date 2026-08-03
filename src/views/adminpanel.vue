@@ -1319,41 +1319,6 @@ onMounted(() => {
 
 .nav-item.active, .nav-item:hover { background: rgba(0,0,0,0.1); }
 
-.sidebar-korisnik {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 1.1rem 1.35rem;
-  border-top: 1px solid rgba(0,0,0,0.1);
-}
-
-.korisnik-inicijali {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #1a1a1a;
-  color: #f5c800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 800;
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.korisnik-info { display: flex; flex-direction: column; gap: 0.2rem; overflow: hidden; }
-.korisnik-ime {
-  color: #1a1a1a;
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.gumb-odjava { background: none; border: none; color: rgba(0,0,0,0.5); font-size: 0.8rem; cursor: pointer; padding: 0; font-family: 'Barlow', sans-serif; }
-.gumb-odjava:hover { color: #1a1a1a; }
-
 .header {
   display: flex;
   align-items: center;
@@ -1484,19 +1449,6 @@ onMounted(() => {
 
 .odabrana-vjezba-broj { color: rgba(255,255,255,0.35); font-size: 0.85rem; width: 1.5rem; flex-shrink: 0; }
 .odabrana-vjezba-naziv { flex: 1; font-size: 0.9rem; color: #fff; }
-
-.gumb-strelica {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.6);
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.gumb-strelica:hover:not(:disabled) { border-color: #f5c800; color: #f5c800; }
-.gumb-strelica:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .gumb-ukloni {
   background: rgba(239,68,68,0.12);

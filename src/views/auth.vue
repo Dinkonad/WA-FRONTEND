@@ -13,7 +13,7 @@
     <div class="panel-forme lijevi" :class="{ 'sakrij': jeRegistracija }">
       <div class="sadrzaj-forme">
         <div class="naslov-app">TERETANA INSPECTOR</div>
-        <form class="forma" @submit.prevent="handlePrijava">
+        <form class="forma" @submit.prevent="posaljiPrijavu">
           <div class="polje-forme">
             <input v-model="prijavaForma.email" type="email" class="unos-polja" placeholder="EMAIL" required autocomplete="email" />
           </div>
@@ -44,7 +44,7 @@
         <button
           v-if="prikaziFaceIdPrijava"
           class="gumb-faceid"
-          @click="handleFaceIdPrijava"
+          @click="pokreniFaceIdPrijavu"
           :disabled="ucitavanje"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -66,7 +66,7 @@
     <div class="panel-forme desni" :class="{ 'sakrij': !jeRegistracija }">
       <div class="sadrzaj-forme">
         <div class="naslov-forma">REGISTRACIJA</div>
-        <form class="forma" @submit.prevent="handleRegistracija">
+        <form class="forma" @submit.prevent="posaljiRegistraciju">
           <div class="polje-forme">
             <input v-model="regForma.ime" type="text" class="unos-polja" placeholder="IME I PREZIME" required autocomplete="name" />
           </div>
@@ -103,7 +103,7 @@
         <h3 class="modal-naslov">Postavi Face ID</h3>
         <p class="modal-tekst">Želiš li omogućiti brzu prijavu s Face ID za sljedeći put?</p>
         <div class="modal-gumbi">
-          <button class="modal-gumb-da" @click="handlePostavljanjeFaceId">Da, postavi</button>
+          <button class="modal-gumb-da" @click="spremiFaceId">Da, postavi</button>
           <button class="modal-gumb-ne" @click="preskociFaceId">Preskoči</button>
         </div>
       </div>
@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
@@ -154,7 +154,7 @@ function odredistePoUlozi(uloga) {
   return '/dashboard';
 }
 
-async function handlePrijava() {
+async function posaljiPrijavu() {
   greska.value = '';
   ucitavanje.value = true;
   try {
@@ -167,7 +167,7 @@ async function handlePrijava() {
   }
 }
 
-async function handleRegistracija() {
+async function posaljiRegistraciju() {
   greska.value = '';
   ucitavanje.value = true;
   try {
@@ -184,7 +184,7 @@ async function handleRegistracija() {
   }
 }
 
-async function handlePostavljanjeFaceId() {
+async function spremiFaceId() {
   try {
     await postaviFaceId();
     zapamtiFaceId(regForma.value.email);
@@ -201,7 +201,7 @@ function preskociFaceId() {
   router.push('/odabir-prijave');
 }
 
-async function handleFaceIdPrijava() {
+async function pokreniFaceIdPrijavu() {
   greska.value = '';
   ucitavanje.value = true;
   try {

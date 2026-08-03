@@ -30,11 +30,10 @@
           <span class="status-tocka" :class="clanAktivan ? 'status-zeleno' : 'status-crveno'"></span>
         </div>
         <button class="stavka-menija" @click="idiNa('/profil')">Profil</button>
-        <button class="stavka-menija" @click="spojiStravu">{{ stravaPovezana ? 'Strava povezana ✓' : 'Poveži se sa Strava' }}</button>
         <button class="stavka-menija" @click="idiNa('/povijest-clanarina')">Povijest članarina</button>
         <button class="stavka-menija" @click="idiNa('/moji-rekordi')">Moji rekordi</button>
         <button class="stavka-menija" @click="idiNa('/feedback')">Feedback</button>
-        <button class="stavka-menija stavka-odjava" @click="handleOdjava">Odjavi se</button>
+        <button class="stavka-menija stavka-odjava" @click="odjaviSe">Odjavi se</button>
       </div>
     </div>
   </div>
@@ -53,7 +52,6 @@ const obavijestiOtvorene = ref(false);
 const profilOtvoren = ref(false);
 const obavijesti = ref([]);
 const clanAktivan = ref(false);
-const stravaPovezana = ref(false);
 
 function formatirajDatum(datum) {
   const d = new Date(datum);
@@ -78,12 +76,6 @@ async function ucitajStatus() {
   } catch (err) {
     console.error(err);
   }
-  try {
-    const { data } = await api.get('/korisnici/profil');
-    stravaPovezana.value = !!data.korisnik?.strava?.povezano;
-  } catch (err) {
-    console.error(err);
-  }
 }
 
 function otvoriObavijesti() {
@@ -101,12 +93,7 @@ function idiNa(putanja) {
   router.push(putanja);
 }
 
-function spojiStravu() {
-  const token = localStorage.getItem('token');
-  window.location.href = `${import.meta.env.VITE_API_URL}/strava/connect?token=${token}`;
-}
-
-function handleOdjava() {
+function odjaviSe() {
   auth.odjava();
   router.push('/prijava');
 }

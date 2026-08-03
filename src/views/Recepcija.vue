@@ -264,18 +264,6 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
-.gumb-odjava {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.6);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: 'Barlow', sans-serif;
-  font-size: 0.85rem;
-}
-.gumb-odjava:hover { border-color: #f5c800; color: #f5c800; }
-
 .sadrzaj {
   flex: 1;
   display: flex;
