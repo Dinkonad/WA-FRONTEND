@@ -15,7 +15,7 @@
         <div class="naslov-app">TERETANA INSPECTOR</div>
         <form class="forma" @submit.prevent="posaljiPrijavu">
           <div class="polje-forme">
-            <input v-model="prijavaForma.email" type="email" class="unos-polja" placeholder="EMAIL" required autocomplete="email" />
+            <input v-model="prijavaForma.email" @input="naPromjenuEmaila" type="email" class="unos-polja" placeholder="EMAIL" required autocomplete="email" />
           </div>
           <div class="polje-forme polje-lozinka">
             <input v-model="prijavaForma.lozinka" :type="prikaziLozinku1 ? 'text' : 'password'" class="unos-polja" placeholder="LOZINKA" required autocomplete="current-password" />
@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
@@ -141,6 +141,40 @@ const regForma = ref({ ime: '', email: '', lozinka: '' });
 const prikaziFaceIdPrijava = computed(() => {
   return podrzavaWebAuthn() && prijavaForma.value.email && imaPostavljenFaceId(prijavaForma.value.email);
 });
+
+const autoFaceIdPokusan = ref(false);
+let debounceTajmer = null;
+
+function izgledaKaoEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function naPromjenuEmaila() {
+  autoFaceIdPokusan.value = false;
+  clearTimeout(debounceTajmer);
+  debounceTajmer = setTimeout(pokusajAutoFaceId, 600);
+}
+
+async function pokusajAutoFaceId() {
+  const email = prijavaForma.value.email;
+  if (autoFaceIdPokusan.value || ucitavanje.value) return;
+  if (!izgledaKaoEmail(email) || !podrzavaWebAuthn() || !imaPostavljenFaceId(email)) return;
+
+  autoFaceIdPokusan.value = true;
+  ucitavanje.value = true;
+  try {
+    const data = await prijaviSeFaceIdom(email);
+    auth.spremiSesiju(data);
+    router.push(odredistePoUlozi(data.korisnik.uloga));
+  } catch (error) {
+    // Korisnik je vjerojatno otkazao sistemski prompt - tiho nastavljamo, bez greske,
+    // da moze normalno upisati lozinku.
+  } finally {
+    ucitavanje.value = false;
+  }
+}
+
+onBeforeUnmount(() => clearTimeout(debounceTajmer));
 
 function prebaci(naRegistraciju) {
   greska.value = '';
