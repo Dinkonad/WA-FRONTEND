@@ -531,11 +531,6 @@ onMounted(async () => {
 .status-kartica .gumb-zuti { margin-top: 1rem; width: 100%; }
 
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
   .overlay { display: block; }
   .hamburger { display: flex; }
   .header { padding: 1.1rem 1.25rem; }
