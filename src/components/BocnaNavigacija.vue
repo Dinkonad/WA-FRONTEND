@@ -157,6 +157,6 @@ onMounted(() => {
     transition: transform 0.3s ease;
     overflow-y: auto;
   }
-  .sidebar-open { transform: translateX(0); }
+  .sidebar-open { transform: translateX(0) !important; }
 }
 </style>
